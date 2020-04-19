@@ -4,3 +4,6 @@
 [submodule "libplay"]
 	path = libplay
 	url = git://git.pengaru.com/libplay
+[submodule "libix2"]
+	path = libix2
+	url = git://git.pengaru.com/libix2
