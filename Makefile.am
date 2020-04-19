@@ -1,0 +1,1 @@
+SUBDIRS = libstage libplay src

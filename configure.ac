@@ -1,0 +1,37 @@
+AC_INIT([sars], [1.0], [vcaputo@pengaru.com])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AC_PROG_CC
+AM_PROG_CC_C_O
+AM_PROG_AR
+AC_PROG_RANLIB
+AM_SILENT_RULES([yes])
+
+CFLAGS="$CFLAGS -Wall"
+
+dnl Check for SDL2
+PKG_CHECK_MODULES(SDL2, sdl2)
+CFLAGS="$CFLAGS $SDL2_CFLAGS"
+LIBS="$LIBS $SDL2_LIBS"
+
+dnl Check for SDL2_mixer
+PKG_CHECK_MODULES(SDL2_MIXER, SDL2_mixer)
+LIBS="$SDL2_MIXER_LIBS $LIBS"
+CFLAGS="$SDL2_MIXER_CFLAGS $CFLAGS"
+
+dnl Check for OpenGL
+PKG_CHECK_MODULES(GL, gl)
+LIBS="$GL_LIBS $LIBS"
+CFLAGS="$GL_CFLAGS $CFLAGS"
+
+AC_CONFIG_FILES([
+ Makefile
+ src/Makefile
+])
+
+AC_CONFIG_SUBDIRS([
+ libix2
+ libstage
+ libplay
+])
+
+AC_OUTPUT
