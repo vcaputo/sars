@@ -1,3 +1,6 @@
 [submodule "libstage"]
 	path = libstage
 	url = git://git.pengaru.com/libstage
+[submodule "libplay"]
+	path = libplay
+	url = git://git.pengaru.com/libplay
