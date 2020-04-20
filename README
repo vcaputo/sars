@@ -8,6 +8,9 @@ before sars will be able to compile, this does the trick:
 
 `git submodule update --init --recursive --remote`
 
+*** New enough git versions support recursive clone too:
+` git clone --recursive git://git.pengaru.com/sars`
+
 Now it's fairly run of the mill autotools:
 
 ```
