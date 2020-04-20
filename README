@@ -1,0 +1,30 @@
+Building from source:
+
+You've probably already done this, but first clone the repo:
+`git clone git://git.pengaru.com/sars`
+
+There are a few submodules which must be initialized recursively
+before sars will be able to compile, this does the trick:
+
+`git submodule update --init --recursive --remote`
+
+Now it's fairly run of the mill autotools:
+
+```
+$ mkdir build
+$ ./bootstrap
+$ cd build
+$ ../configure
+$ make
+$ ./src/sars
+```
+
+The program assumes there will be assets found under the assets/
+folder relative to the current working directory.
+
+These are some .ogg files and .wav files, and they're not checked
+into the git repo.
+
+This README will be updated in the future with links to where the
+production .zip has been uploaded on the wider internet, from those
+archies you can grab the sound assets if desired.
