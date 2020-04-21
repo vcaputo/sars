@@ -66,7 +66,7 @@
 /* every entity just starts with a unit cube AABB and is transformed with a matrix into its position,
  * so here's a convenient aabb to feed into those transformations as needed.
  */
-static const bb3f_t	any_aabb = { .min = { -1.f -1.f, -1.f}, .max = { 1.f, 1.f, 1.f } };
+static const bb3f_t	any_aabb = { .min = { -1.f, -1.f, -1.f }, .max = { 1.f, 1.f, 1.f } };
 
 typedef enum game_state_t {
 	GAME_STATE_PLAYING,
