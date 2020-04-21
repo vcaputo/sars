@@ -188,7 +188,6 @@ static adult_t * adult_new(game_t *game, stage_t *parent)
 }
 
 
-
 static baby_t * baby_new(game_t *game, stage_t *parent)
 {
 	baby_t	*baby;
