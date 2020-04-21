@@ -151,8 +151,7 @@ static inline float randf(void)
 static void entity_update_x(game_t *game, entity_any_t *entity)
 {
 
-	entity->model_x = m4f_identity();
-	entity->model_x = m4f_translate(&entity->model_x, &(v3f_t){entity->position.x, entity->position.y, 0.f});
+	entity->model_x = m4f_translate(NULL, &(v3f_t){entity->position.x, entity->position.y, 0.f});
 	entity->model_x = m4f_scale(&entity->model_x, &entity->scale);
 
 	/* apply the entities transform to any_aabb to get the current transformed aabb, cache it in the
@@ -522,8 +521,7 @@ static void * game_init(play_t *play, int argc, char *argv[])
 	 * I am completely delerious and ready to fall asleep.
 	 */
 	for (int i = 0; i < NELEMS(game->score_digits_x); i++) {
-		game->score_digits_x[i] = m4f_identity();
-		game->score_digits_x[i] = m4f_translate(&game->score_digits_x[i], &(v3f_t){ 1.f / NELEMS(game->score_digits_x) * i - .5f, 0.f, 0.f });
+		game->score_digits_x[i] = m4f_translate(NULL, &(v3f_t){ 1.f / NELEMS(game->score_digits_x) * i - .5f, 0.f, 0.f });
 		game->score_digits_x[i] = m4f_scale(&game->score_digits_x[i], &GAME_DIGITS_SCALE);
 	}
 
