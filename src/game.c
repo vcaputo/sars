@@ -376,13 +376,11 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			return IX2_SEARCH_MORE_MISS;
 
 		/* convert adult into inanimate adult (of the adultes array) */
-		stage_free(game->adult->entity.node);
-		game->adult->entity.node = virus_node_new(&(stage_conf_t){ .parent = game->viruses_node, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->adult->entity.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .parent = game->adult->entity.node, .adopt = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->adult->entity.model_x);
 		sfx_play(sfx.adult_infected);
 
 		if (game->adult->holding) {
-			stage_free(game->adult->holding->any.node);
-			game->adult->holding->any.node = virus_node_new(&(stage_conf_t){ .parent = game->viruses_node, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->adult->holding->any.model_x);
+			(void) virus_node_new(&(stage_conf_t){ .parent = game->adult->holding->any.node, .adopt = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->adult->holding->any.model_x);
 			sfx_play(sfx.baby_infected);
 		}
 		game->state = GAME_STATE_OVER;
