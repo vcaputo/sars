@@ -57,11 +57,11 @@
 #define GAME_OVER_DELAY_MS	1000
 #define GAME_OVER_TIMER		PLAY_TICKS_TIMER2
 
-#define GAME_BABY_SCALE		(v3f_t){.05f, .05f, .05f}
-#define GAME_ADULT_SCALE	(v3f_t){.07f, .07f, .07f}
-#define GAME_TV_SCALE		(v3f_t){.15f, .15f, .15f}
-#define GAME_VIRUS_SCALE	(v3f_t){.05f, .05f, .05f}
-#define GAME_DIGITS_SCALE	(v3f_t){.05f, .05f, .05f}
+#define GAME_BABY_SCALE		(v3f_t){ .05f, .05f, .05f }
+#define GAME_ADULT_SCALE	(v3f_t){ .07f, .07f, .07f }
+#define GAME_TV_SCALE		(v3f_t){ .15f, .15f, .15f }
+#define GAME_VIRUS_SCALE	(v3f_t){ .05f, .05f, .05f }
+#define GAME_DIGITS_SCALE	(v3f_t){ .05f, .05f, .05f }
 
 /* every entity just starts with a unit cube AABB and is transformed with a matrix into its position,
  * so here's a convenient aabb to feed into those transformations as needed.
@@ -121,7 +121,6 @@ union entity_t {
 	tv_t		tv;
 };
 
-
 typedef struct game_t {
 	game_state_t	state;
 
@@ -151,7 +150,7 @@ static inline float randf(void)
 static void entity_update_x(game_t *game, entity_any_t *entity)
 {
 
-	entity->model_x = m4f_translate(NULL, &(v3f_t){entity->position.x, entity->position.y, 0.f});
+	entity->model_x = m4f_translate(NULL, &(v3f_t){ entity->position.x, entity->position.y, 0.f });
 	entity->model_x = m4f_scale(&entity->model_x, &entity->scale);
 
 	/* apply the entities transform to any_aabb to get the current transformed aabb, cache it in the
@@ -645,7 +644,6 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 
 const play_ops_t	game_ops = {
 	.init = game_init,
-//	.shutdown = game_shutdown,
 	.update = game_update,
 	.render = sars_render,
 	.dispatch = game_dispatch,
