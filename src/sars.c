@@ -175,7 +175,7 @@ static void * sars_init(play_t *play, int argc, char *argv[])
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8) < 0,	/* this in particular is required for cache-node.c to work w/alpha */
 		"Unable to set GL alpha size attribute");
 
-#define MSAA_RENDER_TARGET
+//#define MSAA_RENDER_TARGET
 #ifdef MSAA_RENDER_TARGET
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4) < 0,
 		"Unable to et GL multisample samples attribute");
