@@ -269,13 +269,10 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		sfx_play(sfx.baby_infected);
 		entity->any.type = ENTITY_TYPE_VIRUS;
 
-		/* add new baby */
 		(void) baby_new(search->game, search->game->babies_node);
 
-		/* reset virus */
 		reset_virus(search->virus);
 
-		/* stop searching */
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_ADULT:
@@ -292,8 +289,6 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 	default:
 		assert(0);
 	}
-
-	/* XXX: I'm not really caring about the return value for now */
 }
 
 
@@ -374,7 +369,7 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		if (!stage_get_active(entity->any.node))
 			return IX2_SEARCH_MORE_MISS;
 
-		/* convert adult into inanimate adult (of the adultes array) */
+		/* convert adult into inanimate virus (off the viruses array) */
 		(void) virus_node_new(&(stage_conf_t){ .parent = game->adult->entity.node, .adopt = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->adult->entity.model_x);
 		sfx_play(sfx.adult_infected);
 
@@ -395,8 +390,6 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 	default:
 		assert(0);
 	}
-
-	/* XXX: I'm not really caring about the return value for now */
 }
 
 
@@ -611,7 +604,7 @@ static void game_update(play_t *play, void *context)
 		assert(0);
 	}
 
-	/* just always dirty the stage in the game context */
+	/* always dirty the stage in the game context */
 	stage_dirty(sars->stage);
 }
 
@@ -623,7 +616,6 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 	/* global handlers */
 	sars_dispatch(play, context, event);
 
-	/* anything more to do here? */
 	switch (event->type) {
 	case SDL_KEYDOWN:
 		if (event->key.keysym.sym == SDLK_ESCAPE)
