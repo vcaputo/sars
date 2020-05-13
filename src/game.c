@@ -450,8 +450,7 @@ static void reset_game(game_t *game)
 	ix2_reset(game->ix2);
 	stage_free(game->game_node);
 
-	if (game->pad) /* XXX FIXME: this is a stupidty in libpad */
-		pad_free(game->pad);
+	game->pad = pad_free(game->pad);
 
 	game->game_node = stage_new(&(stage_conf_t){ .parent = game->stage, .name = "game", .active = 1, .alpha = 1.f }, NULL, NULL);
 
