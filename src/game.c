@@ -265,7 +265,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
 		/* convert baby into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .parent = entity->any.node, .adopt = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &entity->any.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &entity->any.model_x);
 		sfx_play(sfx.baby_infected);
 		entity->any.type = ENTITY_TYPE_VIRUS;
 
@@ -277,7 +277,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 
 	case ENTITY_TYPE_ADULT:
 		/* convert adult into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .parent = entity->any.node, .adopt = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &entity->any.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &entity->any.model_x);
 		sfx_play(sfx.adult_infected);
 		search->game->state = GAME_STATE_OVER;
 		return IX2_SEARCH_STOP_HIT;
@@ -370,11 +370,11 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			return IX2_SEARCH_MORE_MISS;
 
 		/* convert adult into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .parent = game->adult->entity.node, .adopt = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->adult->entity.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->adult->entity.model_x);
 		sfx_play(sfx.adult_infected);
 
 		if (game->adult->holding) {
-			(void) virus_node_new(&(stage_conf_t){ .parent = game->adult->holding->any.node, .adopt = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->adult->holding->any.model_x);
+			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->adult->holding->any.model_x);
 			sfx_play(sfx.baby_infected);
 		}
 		game->state = GAME_STATE_OVER;
