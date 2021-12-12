@@ -26,8 +26,17 @@ The program assumes there will be assets found under the assets/
 folder relative to the current working directory.
 
 These are some .ogg files and .wav files, and they're not checked
-into the git repo.
+into the git repo.  You may find the assets in a build available
+at:
 
-This README will be updated in the future with links to where the
-production .zip has been uploaded on the wider internet, from those
-archies you can grab the sound assets if desired.
+https://dl.pengaru.com/hungrycat/sars/
+
+The latest build should reflect the current state of the master git
+branch:
+
+https://dl.pengaru.com/hungrycat/sars/hungrycat-sars-latest.zip
+
+There's also a Pouet entry for sars with youtube and other links:
+
+https://www.pouet.net/prod.php?which=85496
+
