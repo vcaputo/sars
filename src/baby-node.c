@@ -23,10 +23,10 @@
 
 static tex_t	*baby_tex;
 
-stage_t * baby_node_new(stage_conf_t *conf, m4f_t *model_x)
+stage_t * baby_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!baby_tex)
 		baby_tex = tex_new(gfx_baby.width, gfx_baby.height, gfx_baby.pixel_data);
 
-	return tex_node_new_tex(conf, baby_tex, model_x);
+	return tex_node_new_tex(conf, baby_tex, projection_x, model_x);
 }

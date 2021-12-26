@@ -54,6 +54,7 @@ static const char	*tex_vs = ""
 	"#version 120\n"
 
 	"uniform mat4	model_x;"
+	"uniform mat4	projection_x;"
 
 	"attribute vec3	vertex;"
 	"attribute vec2	texcoord;"
@@ -61,7 +62,7 @@ static const char	*tex_vs = ""
 	"void main()"
 	"{"
 	"	gl_TexCoord[0].xy = texcoord;"
-	"	gl_Position = model_x * vec4(vertex, 1.f);"
+	"	gl_Position = projection_x * model_x * vec4(vertex, 1.f);"
 	"}"
 "";
 
@@ -81,11 +82,12 @@ static const char	*tex_fs = ""
 
 
 /* Render simply renders a texd texture onto the screen */
-void tex_render(tex_t *tex, float alpha, m4f_t *model_x)
+void tex_render(tex_t *tex, float alpha, m4f_t *projection_x, m4f_t *model_x)
 {
 	int		*uniforms, *attributes;
 
 	assert(tex);
+	assert(projection_x);
 	assert(model_x);
 
 	shader_use(tex_shader, NULL, &uniforms, NULL, &attributes);
@@ -104,7 +106,8 @@ void tex_render(tex_t *tex, float alpha, m4f_t *model_x)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glUniform1f(uniforms[0], alpha);
-	glUniformMatrix4fv(uniforms[1], 1, GL_FALSE, &model_x->m[0][0]);
+	glUniformMatrix4fv(uniforms[1], 1, GL_FALSE, &projection_x->m[0][0]);
+	glUniformMatrix4fv(uniforms[2], 1, GL_FALSE, &model_x->m[0][0]);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -123,9 +126,10 @@ tex_t * tex_new(int width, int height, const unsigned char *buf)
 	if (!vbo) {
 		/* common to all tex instances */
 		tex_shader = shader_pair_new(tex_vs, tex_fs,
-					2,
+					3,
 					(const char *[]) {
 						"alpha",
+						"projection_x",
 						"model_x",
 					},
 					2,

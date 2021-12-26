@@ -21,7 +21,7 @@
 #include "tex-node.h"
 
 
-stage_t * hungrycat_node_new(stage_conf_t *conf, m4f_t *model_x)
+stage_t * hungrycat_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
-	return tex_node_new_mem(conf, gfx_hungrycat.width, gfx_hungrycat.height, gfx_hungrycat.pixel_data, model_x);
+	return tex_node_new_mem(conf, gfx_hungrycat.width, gfx_hungrycat.height, gfx_hungrycat.pixel_data, projection_x, model_x);
 }

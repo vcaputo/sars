@@ -57,7 +57,7 @@ static void * hungrycat_init(play_t *play, int argc, char *argv[])
 	hungrycat = calloc(1, sizeof(hungrycat_t));
 	fatal_if(!hungrycat, "Unable to allocate hungrycat_t");
 
-	hungrycat->node = hungrycat_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "hungrycat", .active = 1 }, &hungrycat->model_x);
+	hungrycat->node = hungrycat_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "hungrycat", .active = 1 }, &sars->projection_x, &hungrycat->model_x);
 	fatal_if(!hungrycat->node, "Unable to create hungrycat->node");
 
 	hungrycat->model_x = m4f_identity();

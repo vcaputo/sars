@@ -124,6 +124,7 @@ union entity_t {
 typedef struct game_t {
 	game_state_t	state;
 
+	sars_t		*sars;
 	stage_t		*stage;
 	stage_t		*game_node;
 	stage_t		*babies_node;
@@ -179,7 +180,7 @@ static adult_t * adult_new(game_t *game, stage_t *parent)
 	fatal_if(!adult, "unale to allocate adult_t");
 
 	adult->entity.type = ENTITY_TYPE_ADULT;
-	adult->entity.node = adult_node_new(&(stage_conf_t){ .parent = parent, .name = "adult", .layer = 3, .alpha = 1.f }, &adult->entity.model_x);
+	adult->entity.node = adult_node_new(&(stage_conf_t){ .parent = parent, .name = "adult", .layer = 3, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
 	adult->entity.scale = GAME_ADULT_SCALE;
 	entity_update_x(game, &adult->entity);
 
@@ -195,7 +196,7 @@ static baby_t * baby_new(game_t *game, stage_t *parent)
 	fatal_if(!baby, "unale to allocate baby_t");
 
 	baby->entity.type = ENTITY_TYPE_BABY;
-	baby->entity.node = baby_node_new(&(stage_conf_t){ .parent = parent, .name = "baby", .active = 1, .alpha = 1.f }, &baby->entity.model_x);
+	baby->entity.node = baby_node_new(&(stage_conf_t){ .parent = parent, .name = "baby", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
 	baby->entity.scale = GAME_BABY_SCALE;
 	baby->entity.position.x = randf();
 	baby->entity.position.y = randf();
@@ -213,7 +214,7 @@ static tv_t * tv_new(game_t *game, stage_t *parent)
 	fatal_if(!tv, "unale to allocate tv_t");
 
 	tv->entity.type = ENTITY_TYPE_TV;
-	tv->entity.node = tv_node_new(&(stage_conf_t){ .parent = parent, .name = "tv", .layer = 1, .alpha = 1.f }, &tv->entity.model_x);
+	tv->entity.node = tv_node_new(&(stage_conf_t){ .parent = parent, .name = "tv", .layer = 1, .alpha = 1.f }, &game->sars->projection_x, &tv->entity.model_x);
 	tv->entity.scale = GAME_TV_SCALE;
 	entity_update_x(game, &tv->entity);
 
@@ -236,7 +237,7 @@ static virus_t * virus_new(game_t *game, stage_t *parent)
 	fatal_if(!virus, "unale to allocate virus_t");
 
 	virus->entity.type = ENTITY_TYPE_VIRUS;
-	virus->entity.node = virus_node_new(&(stage_conf_t){ .parent = parent, .name = "virus", .alpha = 1.f }, &virus->entity.model_x);
+	virus->entity.node = virus_node_new(&(stage_conf_t){ .parent = parent, .name = "virus", .alpha = 1.f }, &game->sars->projection_x, &virus->entity.model_x);
 	virus->entity.scale = GAME_VIRUS_SCALE;
 	randomize_virus(virus);
 	entity_update_x(game, &virus->entity);
@@ -265,7 +266,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
 		/* convert baby into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &entity->any.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
 		sfx_play(sfx.baby_infected);
 		entity->any.type = ENTITY_TYPE_VIRUS;
 
@@ -277,7 +278,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 
 	case ENTITY_TYPE_ADULT:
 		/* convert adult into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &entity->any.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
 		sfx_play(sfx.adult_infected);
 		search->game->state = GAME_STATE_OVER;
 		return IX2_SEARCH_STOP_HIT;
@@ -370,11 +371,11 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			return IX2_SEARCH_MORE_MISS;
 
 		/* convert adult into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->adult->entity.model_x);
+		(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
 		sfx_play(sfx.adult_infected);
 
 		if (game->adult->holding) {
-			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->adult->holding->any.model_x);
+			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->holding->any.model_x);
 			sfx_play(sfx.baby_infected);
 		}
 		game->state = GAME_STATE_OVER;
@@ -483,7 +484,7 @@ static void show_score(game_t *game)
 	for (unsigned i = 1000000000, pos = 0; i > 0; score %= i, i /= 10, pos++) {
 		unsigned	v = score / i;
 
-		digit_node_new(&(stage_conf_t){ .parent = game->score_node, .name = "score-digit", .active = 1, .alpha = 1.f }, v, &game->score_digits_x[pos]);
+		digit_node_new(&(stage_conf_t){ .parent = game->score_node, .name = "score-digit", .active = 1, .alpha = 1.f }, v, &game->sars->projection_x, &game->score_digits_x[pos]);
 	}
 
 	stage_set_active(game->score_node, 1);
@@ -500,8 +501,9 @@ static void * game_init(play_t *play, int argc, char *argv[])
 	game = calloc(1, sizeof(game_t));
 	fatal_if(!game, "Unable to allocate game_t");
 
+	game->sars = sars;
 	game->stage = sars->stage;
-	game->plasma_node = plasma_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "plasma", .alpha = 1 });
+	game->plasma_node = plasma_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "plasma", .alpha = 1 }, &sars->projection_x);
 
 	game->ix2 = ix2_new(NULL, 4, 4, 1 /* increase for nested searches */);
 

@@ -23,10 +23,10 @@
 
 static tex_t	*tv_tex;
 
-stage_t * tv_node_new(stage_conf_t *conf, m4f_t *model_x)
+stage_t * tv_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!tv_tex)
 		tv_tex = tex_new(gfx_tv.width, gfx_tv.height, gfx_tv.pixel_data);
 
-	return tex_node_new_tex(conf, tv_tex, model_x);
+	return tex_node_new_tex(conf, tv_tex, projection_x, model_x);
 }

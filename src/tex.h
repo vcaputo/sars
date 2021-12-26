@@ -22,7 +22,7 @@
 typedef struct tex_t tex_t;
 typedef struct m4f_t m4f_t;
 
-void tex_render(tex_t *tex, float alpha, m4f_t *model_x);
+void tex_render(tex_t *tex, float alpha, m4f_t *projection_x, m4f_t *model_x);
 tex_t * tex_new(int width, int height, const unsigned char *buf);
 tex_t * tex_ref(tex_t *tex);
 tex_t * tex_free(tex_t *tex);

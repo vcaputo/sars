@@ -22,10 +22,13 @@
 #include "glad.h"
 #include "plasma-node.h"
 #include "shader-node.h"
+#include "m4f.h"
 
 
 static const char	*plasma_vs = ""
 	"#version 120\n"
+
+	"uniform mat4	projection_x;"
 
 	"attribute vec3 vertex;"
 	"attribute vec2 texcoord;"
@@ -33,8 +36,7 @@ static const char	*plasma_vs = ""
 	"void main()"
 	"{"
 	"	gl_TexCoord[0].xy = texcoord;"
-	//"	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;"
-	"	gl_Position = vec4(vertex, 1.f);"
+	"	gl_Position = projection_x * vec4(vertex, 1.f);"
 	"}"
 "";
 
@@ -78,16 +80,18 @@ static void plasma_uniforms(void *uniforms_ctxt, void *render_ctxt, unsigned n_u
 
 	glUniform1f(uniforms[0], alpha);
 	glUniform1f(uniforms[1], play_ticks(play, PLAY_TICKS_TIMER0) * .001f); // FIXME KLUDGE ALERT
+	glUniformMatrix4fv(uniforms[2], 1, GL_FALSE, &model_x->m[0][0]);
 }
 
 
 /* create plasma rendering stage */
-stage_t * plasma_node_new(const stage_conf_t *conf)
+stage_t * plasma_node_new(const stage_conf_t *conf, m4f_t *projection_x)
 {
-	return	shader_node_new_src(conf, plasma_vs, plasma_fs, NULL, plasma_uniforms, NULL, 2,
+	return	shader_node_new_src(conf, plasma_vs, plasma_fs, projection_x, plasma_uniforms, NULL, 3,
 			(const char *[]){
 				"alpha",
 				"time",
+				"projection_x",
 			}
 		);
 }

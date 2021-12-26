@@ -20,6 +20,6 @@
 typedef struct stage_conf_t stage_conf_t;
 typedef struct m4f_t m4f_t;
 
-stage_t * virus_node_new(stage_conf_t *conf, m4f_t *model_x);
+stage_t * virus_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x);
 
 #endif

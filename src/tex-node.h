@@ -21,7 +21,7 @@ typedef struct m4f_t m4f_t;
 typedef struct stage_t stage_t;
 typedef struct tex_t tex_t;
 
-stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *model_x);
-stage_t * tex_node_new_mem(stage_conf_t *conf, int width, int height, const unsigned char *buf, m4f_t *model_x);
+stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *projection_x, m4f_t *model_x);
+stage_t * tex_node_new_mem(stage_conf_t *conf, int width, int height, const unsigned char *buf, m4f_t *projection_x, m4f_t *model_x);
 
 #endif

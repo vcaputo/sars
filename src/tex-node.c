@@ -32,6 +32,7 @@
 
 typedef struct tex_node_t {
 	tex_t		*tex;
+	m4f_t		*projection_x;
 	m4f_t		*model_x;
 } tex_node_t;
 
@@ -44,7 +45,7 @@ static void tex_node_render(const stage_t *stage, void *object, float alpha, voi
 	assert(stage);
 	assert(tex_node);
 
-	tex_render(tex_node->tex, alpha, tex_node->model_x);
+	tex_render(tex_node->tex, alpha, tex_node->projection_x, tex_node->model_x);
 }
 
 
@@ -65,7 +66,7 @@ static const stage_ops_t tex_node_ops = {
 
 
 /* retun a tex node from a reusable refcounted tex instance */
-stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *model_x)
+stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *projection_x, m4f_t *model_x)
 {
 	tex_node_t	*tex_node;
 	stage_t		*s;
@@ -79,6 +80,7 @@ stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *model_x)
 	fatal_if(!s, "Unable to create stage \"%s\"", conf->name);
 
 	tex_node->tex = tex_ref(tex);
+	tex_node->projection_x = projection_x;
 	tex_node->model_x = model_x;
 
 	return s;
@@ -89,10 +91,10 @@ stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *model_x)
 /* return a tex node from a pix array
  * the pixels are used in-place and no duplicate is made.
  */
-stage_t * tex_node_new_mem(stage_conf_t *conf, int width, int height, const unsigned char *buf, m4f_t *model_x)
+stage_t * tex_node_new_mem(stage_conf_t *conf, int width, int height, const unsigned char *buf, m4f_t *projection_x, m4f_t *model_x)
 {
 	tex_t	*tex = tex_new(width, height, buf);
-	stage_t	*stage = tex_node_new_tex(conf, tex_new(width, height, buf), model_x);
+	stage_t	*stage = tex_node_new_tex(conf, tex_new(width, height, buf), projection_x, model_x);
 
 	tex_free(tex);
 

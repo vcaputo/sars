@@ -23,10 +23,10 @@
 
 static tex_t	*virus_tex;
 
-stage_t * virus_node_new(stage_conf_t *conf, m4f_t *model_x)
+stage_t * virus_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!virus_tex)
 		virus_tex = tex_new(gfx_virus.width, gfx_virus.height, gfx_virus.pixel_data);
 
-	return tex_node_new_tex(conf, virus_tex, model_x);
+	return tex_node_new_tex(conf, virus_tex, projection_x, model_x);
 }

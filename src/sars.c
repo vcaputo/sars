@@ -21,17 +21,13 @@
 
 #include "clear-node.h"
 #include "glad.h"
+#include "m4f-3dx.h"
 #include "macros.h"
 #include "sars.h"
 
 #define SARS_DEFAULT_WIDTH	800
 #define SARS_DEFAULT_HEIGHT	600
-//#define SARS_WINDOW_FLAGS	(SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL)
 #define SARS_WINDOW_FLAGS	(SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI)
-
-#if 0
-#define SARS_ASPECT_RATIO	.7
-#endif
 
 
 void sars_canvas_size(sars_t *sars, int *res_width, int *res_height)
@@ -120,15 +116,78 @@ uint32_t sars_viewport_id(sars_t *sars)
 }
 
 
-void sars_toggle_fullscreen(sars_t *sars)
+/* produce a boxed transformation matrix for the current screen/window dimensions */
+static m4f_t sars_boxed_projection_x(sars_t *sars)
 {
-	if (sars->windowed) {
-		if (!SDL_SetWindowFullscreen(sars->window, SDL_WINDOW_FULLSCREEN_DESKTOP))
-			sars->windowed = 0;
+	static const float	desired_ratio = (float)SARS_DEFAULT_WIDTH / (float)SARS_DEFAULT_HEIGHT;
+	v3f_t			scale = { .x = 1.f, .y = 1.f, .z = 1.f };
+	float			display_ratio;
+	int			w, h;
+
+	sars_viewport_size(sars, &w, &h);
+	assert(w > 0 && h > 0);
+
+	display_ratio = (float)w / (float)h;
+
+	if (desired_ratio <= display_ratio) {
+		/* display is equal to or wider than desired, "pillarbox" / X-padded */
+		scale.x = (float)h * desired_ratio / (float)w;
 	} else {
-		if (!SDL_SetWindowFullscreen(sars->window, 0))
-			sars->windowed = 1;
+		/* display is taller than desired, "letterbox" / Y-padded */
+		scale.y = (float)w * (1.f / desired_ratio) / (float)h;
 	}
+
+	return m4f_scale(NULL, &scale);
+}
+
+
+static void sars_update_projection_x(sars_t *sars)
+{
+	assert(sars);
+
+	if (sars->winmode == SARS_WINMODE_FILLSCREEN)
+		sars->projection_x = m4f_identity();
+	else
+		sars->projection_x = sars_boxed_projection_x(sars);
+}
+
+
+sars_winmode_t sars_winmode_set(sars_t *sars, sars_winmode_t winmode)
+{
+	assert(sars);
+
+	if (sars->winmode == winmode)
+		return sars->winmode;
+
+	switch (winmode) {
+	case SARS_WINMODE_WINDOW:
+		if (SDL_SetWindowFullscreen(sars->window, 0))
+			return sars->winmode;
+		break;
+
+	case SARS_WINMODE_FULLSCREEN:
+		if (sars->winmode == SARS_WINMODE_WINDOW) {
+			if (SDL_SetWindowFullscreen(sars->window, SDL_WINDOW_FULLSCREEN_DESKTOP))
+				return sars->winmode;
+		}
+		break;
+
+	case SARS_WINMODE_FILLSCREEN:
+		if (sars->winmode == SARS_WINMODE_WINDOW) {
+			if (SDL_SetWindowFullscreen(sars->window, SDL_WINDOW_FULLSCREEN_DESKTOP))
+				return sars->winmode;
+		}
+		break;
+
+	default:
+		assert(0);
+	}
+
+	sars->winmode = winmode;
+
+	sars_update_projection_x(sars);
+
+	return sars->winmode;
 }
 
 
@@ -145,16 +204,17 @@ static void * sars_init(play_t *play, int argc, char *argv[])
 	(void) clear_node_new(&(stage_conf_t){.parent = sars->stage, .name = "gl-clear-sars", .active = 1});
 
 	sars->window_width = SARS_DEFAULT_WIDTH;
-	sars->window_height =  SARS_DEFAULT_HEIGHT;
+	sars->window_height = SARS_DEFAULT_HEIGHT;
 
 	if (argc > 1) {
 		/* for now just support --window [WxH] */
 		if (!strcasecmp(argv[1], "--window")) {
-			sars->windowed = 1;
+			sars->winmode = SARS_WINMODE_WINDOW; /* this is kinda redundant since we default to windowed now */
 
 			if (argc > 2)
 				sscanf(argv[2], "%ux%u", &sars->window_width, &sars->window_height);
 		}
+		/* TODO: add --fullscreen? */
 	}
 
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) < 0,
@@ -198,7 +258,7 @@ static void * sars_init(play_t *play, int argc, char *argv[])
 				SDL_WINDOWPOS_CENTERED,
 				SDL_WINDOWPOS_CENTERED,
 				sars->window_width, sars->window_height,
-				SARS_WINDOW_FLAGS | (sars->windowed ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP));
+				SARS_WINDOW_FLAGS | (sars->winmode == SARS_WINMODE_WINDOW ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP));
 
 	if (!sars->window) {
 		fatal_if(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0) < 0,
@@ -210,7 +270,7 @@ static void * sars_init(play_t *play, int argc, char *argv[])
 					SDL_WINDOWPOS_CENTERED,
 					SDL_WINDOWPOS_CENTERED,
 					sars->window_width, sars->window_height,
-					SARS_WINDOW_FLAGS | (sars->windowed ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP));
+					SARS_WINDOW_FLAGS | (sars->winmode == SARS_WINMODE_WINDOW ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP));
 
 		fatal_if(!sars->window,
 			"Unable to create SDL window");
@@ -234,6 +294,9 @@ static void * sars_init(play_t *play, int argc, char *argv[])
 #ifdef MSAA_RENDER_TARGET
 	glEnable(GL_MULTISAMPLE);
 #endif
+
+	sars_update_projection_x(sars);
+
 	return sars;
 }
 
@@ -270,8 +333,13 @@ void sars_dispatch(play_t *play, void *context, SDL_Event *event)
 		 */
 		sars_canvas_size(sars, &w, &h);
 		glViewport(0, 0, w, h);
+		sars_update_projection_x(sars);
 		stage_dirty(sars->stage);
 	}
+
+	/* cycle fullscreen/windowed winmodes */
+	if (event->type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_f)
+		sars_winmode_set(sars, (sars->winmode + 1) % SARS_WINMODE_CNT);
 }
 
 

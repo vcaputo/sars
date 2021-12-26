@@ -49,12 +49,12 @@ static tex_t		*digits_tex[10];
 #define DIGIT_WIDTH	184
 #define DIGIT_HEIGHT	288
 
-stage_t * digit_node_new(stage_conf_t *conf, unsigned digit, m4f_t *model_x)
+stage_t * digit_node_new(stage_conf_t *conf, unsigned digit, m4f_t *projection_x, m4f_t *model_x)
 {
 	assert(digit < 10);
 
 	if (!digits_tex[digit])
 		digits_tex[digit] = tex_new(DIGIT_WIDTH, DIGIT_HEIGHT, digits_pixels[digit]);
 
-	return tex_node_new_tex(conf, digits_tex[digit], model_x);
+	return tex_node_new_tex(conf, digits_tex[digit], projection_x, model_x);
 }
