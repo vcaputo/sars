@@ -166,12 +166,6 @@ sars_winmode_t sars_winmode_set(sars_t *sars, sars_winmode_t winmode)
 		break;
 
 	case SARS_WINMODE_FULLSCREEN:
-		if (sars->winmode == SARS_WINMODE_WINDOW) {
-			if (SDL_SetWindowFullscreen(sars->window, SDL_WINDOW_FULLSCREEN_DESKTOP))
-				return sars->winmode;
-		}
-		break;
-
 	case SARS_WINMODE_FILLSCREEN:
 		if (sars->winmode == SARS_WINMODE_WINDOW) {
 			if (SDL_SetWindowFullscreen(sars->window, SDL_WINDOW_FULLSCREEN_DESKTOP))
