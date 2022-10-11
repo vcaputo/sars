@@ -124,6 +124,13 @@ union entity_t {
 typedef struct game_t {
 	game_state_t	state;
 
+	struct {
+		SDL_TouchID	touch_id;
+		SDL_FingerID	finger_id;
+		v2f_t		position; /* -1 .. +1 */
+		int		active;
+	} touch;
+
 	sars_t		*sars;
 	stage_t		*stage;
 	stage_t		*game_node;
@@ -571,6 +578,18 @@ static void game_update(play_t *play, void *context)
 				move = &dir;
 			}
 
+			if (game->touch.active) {
+				float	distance;
+
+				dir = v2f_sub(&game->touch.position, &game->adult->entity.position);
+				distance = v2f_length(&dir);
+				if (distance) {
+					dir = v2f_normalize(&dir);
+					dir = v2f_mult_scalar(&dir, distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED);
+					move = &dir;
+				}
+			}
+
 			if (move)
 				game_move_adult(game, move);
 		}
@@ -627,6 +646,41 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 			break;
 		}
 
+		break;
+
+	case SDL_FINGERDOWN:
+		if (game->state == GAME_STATE_OVER_WAITING)
+			reset_game(game);
+		/* fallthrough */
+	case SDL_FINGERMOTION:
+		if ((game->touch.active &&
+		     game->touch.touch_id == event->tfinger.touchId &&
+		     game->touch.finger_id == event->tfinger.fingerId) ||
+		    !game->touch.active) {
+			game->touch.active = 1;
+			game->touch.touch_id = event->tfinger.touchId;
+			game->touch.finger_id = event->tfinger.fingerId;
+
+			sars_ndc_to_bpc(game->sars,
+					(event->tfinger.x + -.5f),
+					-(event->tfinger.y + -.5f),
+					&game->touch.position.x,
+					&game->touch.position.y);
+
+			/* XXX: note the scaling is larger than -1..+1 so the babies can be saved fullscreen,
+			 * this also has the effect of putting the adult a bit offset from the finger so you
+			 * can actually see what you're doing more of the time (not near the center though).
+			 */
+			game->touch.position.x *= 2.4f;
+			game->touch.position.y *= 2.4f;
+		}
+		break;
+
+	case SDL_FINGERUP:
+		if (game->touch.active &&
+		    game->touch.touch_id == event->tfinger.touchId &&
+		    game->touch.finger_id == event->tfinger.fingerId)
+			game->touch.active = 0;
 		break;
 
 	default:
