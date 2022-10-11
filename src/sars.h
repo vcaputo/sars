@@ -45,6 +45,7 @@ typedef struct sars_t {
 	sars_winmode_t	winmode;
 
 	m4f_t		projection_x;
+	m4f_t		projection_x_inv;
 } sars_t;
 
 void sars_canvas_size(sars_t *sars, int *res_width, int *res_height);
@@ -53,6 +54,8 @@ void sars_canvas_from_ndc(sars_t *sars, float x, float y, int *res_x, int *res_y
 void sars_viewport_size(sars_t *sars, int *res_width, int *res_height);
 void sars_viewport_to_ndc(sars_t *sars, int x, int y, float *res_x, float *res_y);
 void sars_viewport_from_ndc(sars_t *sars, float x, float y, int *res_x, int *res_y);
+void sars_ndc_to_bpc(sars_t *sars, float x, float y, float *res_x, float *res_y);
+void sars_viewport_to_bpc(sars_t *sars, int x, int y, float *res_x, float *res_y);
 uint32_t sars_viewport_id(sars_t *sars);
 void sars_render(play_t *play, void *context);
 void sars_dispatch(play_t *play, void *context, SDL_Event *event);

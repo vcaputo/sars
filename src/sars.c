@@ -110,6 +110,44 @@ void sars_viewport_from_ndc(sars_t *sars, float x, float y, int *res_x, int *res
 }
 
 
+void sars_ndc_to_bpc(sars_t *sars, float x, float y, float *res_x, float *res_y)
+{
+	v3f_t	coord = { .x = x, .y = y}, res;
+
+	res = m4f_mult_v3f(&sars->projection_x_inv, &coord);
+
+	/* it's not particularly useful to return coordinates outside the projection,
+	 * rather than having everything using this function have to clamp or otherwise
+	 * handle the result within these bounds, just do it here.  Callers wanting to
+	 * work with coordinates outside the projection arguably shouldn't be going through
+	 * this transformation in the first place; they're clearly interested
+	 * in viewport/screen-space or canvas-space coordinates, not projection coordinates.
+	 */
+
+	if (res.x > 1.f)
+		res.x = 1.f;
+	else if (res.x < -1.f)
+		res.x = -1.f;
+
+	if (res.y > 1.f)
+		res.y = 1.f;
+	else if (res.y < -1.f)
+		res.y = -1.f;
+
+	*res_x = res.x;
+	*res_y = res.y;
+}
+
+
+void sars_viewport_to_bpc(sars_t *sars, int x, int y, float *res_x, float *res_y)
+{
+	v3f_t	coord = {};
+
+	sars_viewport_to_ndc(sars, x, y, &coord.x, &coord.y);
+	sars_ndc_to_bpc(sars, coord.x, coord.y, res_x, res_y);
+}
+
+
 uint32_t sars_viewport_id(sars_t *sars)
 {
 	return SDL_GetWindowID(sars->window);
@@ -149,6 +187,8 @@ static void sars_update_projection_x(sars_t *sars)
 		sars->projection_x = m4f_identity();
 	else
 		sars->projection_x = sars_boxed_projection_x(sars);
+
+	sars->projection_x_inv = m4f_invert(&sars->projection_x);
 }
 
 
