@@ -26,50 +26,55 @@
 
 
 static const char	*plasma_vs = ""
-	"#version 120\n"
+	"#version 100\n"
 
 	"uniform mat4	projection_x;"
 
 	"attribute vec3 vertex;"
 	"attribute vec2 texcoord;"
 
+	"varying vec2 UV;"
+
 	"void main()"
 	"{"
-	"	gl_TexCoord[0].xy = texcoord;"
-	"	gl_Position = projection_x * vec4(vertex, 1.f);"
+	"	UV = texcoord;"
+	"	gl_Position = projection_x * vec4(vertex, 1.0);"
 	"}"
 "";
 
 
 // derived from https://www.bidouille.org/prog/plasma
 static const char	*plasma_fs = ""
-	"#version 120\n"
+	"#version 100\n"
 
 	"#define PI 3.1415926535897932384626433832795\n"
 
+	"precision mediump float;"
 	"uniform float alpha;"
 	"uniform float time;"
 
+	"varying vec2 UV;"
+
 	"void main() {"
 	"	float v;"
-	"	float stime = sin(time * .01f) * 100.f;"
+	"	float stime = sin(time * .01) * 100.0;"
 
-	"	vec2 c = gl_TexCoord[0].st;"
+	"	vec2 c = UV;"
 
 	// this zooms the texture coords in and out a bit with time
-	"	c *= (sin(stime * .01f) *.5f + .5f) * 3.f + 1.f;"
+	"	c *= (sin(stime * .01) *.5 + .5) * 3.0 + 1.0;"
 
 	// plasma calculations, stime instead of time directly to vary directions and speed
 	"	v = sin((c.x + stime));"
-	"	v += sin((c.y + stime) * .5f);"
-	"	v += sin((c.x + c.y +stime) * .5f);"
+	"	v += sin((c.y + stime) * .5);"
+	"	v += sin((c.x + c.y +stime) * .5);"
 
-	"	c += vec2(sin(stime * .33f), cos(stime * .5f)) * 3.f;"
+	"	c += vec2(sin(stime * .33), cos(stime * .5)) * 3.0;"
 
-	"	v += sin(sqrt(c.x * c.x + c.y * c.y + 1.f) + stime);"
+	"	v += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + stime);"
 
-	"	vec3 col = vec3(cos(PI * v + sin(time)), sin(PI * v + cos(time * .33f)), cos(PI * v + sin(time * .66f)));"
-	"	gl_FragColor = vec4(col * .5f + .5f, alpha);"
+	"	vec3 col = vec3(cos(PI * v + sin(time)), sin(PI * v + cos(time * .33)), cos(PI * v + sin(time * .66)));"
+	"	gl_FragColor = vec4(col * .5 + .5, alpha);"
 	"}"
 "";
 

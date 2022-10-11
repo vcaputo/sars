@@ -51,7 +51,7 @@ static const float	texcoords[] = {
 
 
 static const char	*tex_vs = ""
-	"#version 120\n"
+	"#version 100\n"
 
 	"uniform mat4	model_x;"
 	"uniform mat4	projection_x;"
@@ -59,23 +59,28 @@ static const char	*tex_vs = ""
 	"attribute vec3	vertex;"
 	"attribute vec2	texcoord;"
 
+	"varying vec2 UV;"
+
 	"void main()"
 	"{"
-	"	gl_TexCoord[0].xy = texcoord;"
-	"	gl_Position = projection_x * model_x * vec4(vertex, 1.f);"
+	"	UV = texcoord;"
+	"	gl_Position = projection_x * model_x * vec4(vertex, 1.0);"
 	"}"
 "";
 
 
 static const char	*tex_fs = ""
-	"#version 120\n"
+	"#version 100\n"
 
+	"precision mediump float;"
 	"uniform sampler2D	tex0;"
 	"uniform float		alpha;"
 
+	"varying vec2		UV;"
+
 	"void main()"
 	"{"
-	"	gl_FragColor = texture2D(tex0, gl_TexCoord[0].st);"
+	"	gl_FragColor = texture2D(tex0, UV);"
 	"	gl_FragColor.a *= alpha;"
 	"}"
 "";
@@ -159,11 +164,10 @@ tex_t * tex_new(int width, int height, const unsigned char *buf)
 
 	/* transparent border pixels outside of the texture boundaries, this
 	 * eliminates the spurious fringing on some sprites/positions */
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameterfv(GL_TEXTURE_3D, GL_TEXTURE_BORDER_COLOR, (float[4]){});
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	tex->refcnt = 1;

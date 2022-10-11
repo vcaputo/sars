@@ -260,11 +260,11 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 		/* TODO: add --fullscreen? */
 	}
 
-	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) < 0,
+	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) < 0,
 		"Unable to set GL core profile attribute");
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) < 0,
 		"Unable to set GL major version attribute");
-	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) < 0,
+	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) < 0,
 		"Unable to set GL minor version attribute");
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) < 0,
 		"Unable to set GL doublebuffer attribute");
@@ -326,8 +326,8 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 	fatal_if(SDL_GL_SetSwapInterval(1) < 0,
 		"Unable to enable vsync");
 
-	fatal_if(!gladLoadGL(),
-		"Failed to initialize GLAD OpenGL extension loader");
+	fatal_if(!gladLoadGLES2Loader(SDL_GL_GetProcAddress),
+		"Failed to initialize GLAD GLES 2.0 loader");
 
 	//This seems unnecessary now that the game grabs the mouse,
 	//and it's undesirable with clickable UI elements outside the
