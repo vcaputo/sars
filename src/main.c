@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 {
 	play_t	*play;
 
-	play = play_startup(argc, argv, ops);
+	play = play_startup(argc, argv, 0, ops);
 
 	play_run(play);
 

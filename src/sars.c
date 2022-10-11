@@ -226,7 +226,7 @@ sars_winmode_t sars_winmode_set(sars_t *sars, sars_winmode_t winmode)
 }
 
 
-static void * sars_init(play_t *play, int argc, char *argv[])
+static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 {
 	sars_t	*sars;
 	char	*base;

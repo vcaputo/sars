@@ -49,7 +49,7 @@ typedef struct hungrycat_t {
 } hungrycat_t;
 
 
-static void * hungrycat_init(play_t *play, int argc, char *argv[])
+static void * hungrycat_init(play_t *play, int argc, char *argv[], unsigned flags)
 {
 	sars_t		*sars = play_context(play, SARS_CONTEXT_SARS);
 	hungrycat_t	*hungrycat;

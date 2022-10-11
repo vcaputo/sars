@@ -953,7 +953,7 @@ static void show_score(game_t *game)
 }
 
 
-static void * game_init(play_t *play, int argc, char *argv[])
+static void * game_init(play_t *play, int argc, char *argv[], unsigned flags)
 {
 	sars_t	*sars = play_context(play, SARS_CONTEXT_SARS);
 	game_t	*game;
