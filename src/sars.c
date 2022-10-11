@@ -28,6 +28,14 @@
 
 #define SARS_DEFAULT_WIDTH	800
 #define SARS_DEFAULT_HEIGHT	600
+
+#ifdef __EMSCRIPTEN__
+/* emscripten defaults to fullscreen since it's generally a nested canvas already in a window (browser) */
+#define SARS_DEFAULT_WINMODE	SARS_WINMODE_FULLSCREEN
+#else
+#define SARS_DEFAULT_WINMODE	SARS_WINMODE_WINDOW
+#endif
+
 #define SARS_WINDOW_FLAGS	(SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI)
 
 
@@ -248,6 +256,7 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 
 	sars->window_width = SARS_DEFAULT_WIDTH;
 	sars->window_height = SARS_DEFAULT_HEIGHT;
+	sars->winmode = SARS_DEFAULT_WINMODE;
 
 	if (argc > 1) {
 		/* for now just support --window [WxH] */
