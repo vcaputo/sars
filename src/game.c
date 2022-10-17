@@ -50,6 +50,9 @@
 
 #define GAME_TV_DELAY_MS	3000
 #define GAME_TV_TIMER		PLAY_TICKS_TIMER3
+#define GAME_TV_RANGE_MIN	.2f
+#define GAME_TV_RANGE_MAX	.7f
+#define GAME_TV_ATTRACTION	.005f
 
 #define GAME_KBD_DELAY_MS	20
 #define GAME_KBD_TIMER		PLAY_TICKS_TIMER4
@@ -260,6 +263,49 @@ static void reset_virus(virus_t *virus)
 }
 
 
+static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
+{
+	game_t		*game = cb_context;
+	entity_t	*entity = object;
+
+	switch (entity->any.type) {
+	case ENTITY_TYPE_BABY: {
+		v2f_t	delta;
+		float	len;
+
+		/* skip held baby */
+		if (game->adult->holding == entity)
+			return IX2_SEARCH_MORE_MISS;
+
+		/* if baby's distance from tv is within a range, inch it towards TV */
+		delta = v2f_sub(&game->tv->entity.position, &entity->any.position);
+		len = v2f_length(&delta);
+		if (len < GAME_TV_RANGE_MIN || len > GAME_TV_RANGE_MAX)
+			return IX2_SEARCH_MORE_MISS;
+
+		/* move the baby towards the TV */
+		delta = v2f_normalize(&delta);
+		delta = v2f_mult_scalar(&delta, GAME_TV_ATTRACTION);
+		entity->any.position = v2f_add(&entity->any.position, &delta);
+		entity_update_x(game, &entity->any);
+
+		return IX2_SEARCH_MORE_HIT;
+	}
+
+	case ENTITY_TYPE_ADULT:
+		/* XXX: should the tv affect the adult from a distance? */
+		return IX2_SEARCH_MORE_MISS;
+
+	case ENTITY_TYPE_VIRUS:
+	case ENTITY_TYPE_TV:
+		return IX2_SEARCH_MORE_MISS;
+
+	default:
+		assert(0);
+	}
+}
+
+
 typedef struct virus_search_t {
 	game_t	*game;
 	virus_t	*virus;
@@ -320,6 +366,12 @@ static void update_entities(play_t *play, game_t *game)
 		game->tv->entity.position.y = randf();
 		entity_update_x(game, &game->tv->entity);
 		stage_set_active(game->tv->entity.node, 1);
+	}
+
+	if (stage_get_active(game->tv->entity.node)) { /* if the TV is on, move nearby babies towards it */
+		bb2f_t	range_aabb = { .min = { -GAME_TV_RANGE_MAX, -GAME_TV_RANGE_MAX }, .max = { GAME_TV_RANGE_MAX, GAME_TV_RANGE_MAX } };
+
+		ix2_search_by_aabb(game->ix2, &game->tv->entity.position, NULL, &range_aabb, tv_search, game);
 	}
 
 	for (int i = 0; i < NELEMS(game->viruses); i++) {
