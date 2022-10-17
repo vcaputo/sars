@@ -45,8 +45,8 @@
 #define GAME_VIRUS_SPEED	.01f
 #define GAME_ADULT_SPEED	.04f
 
-#define GAME_VIRUS_DELAY_MS	20
-#define GAME_VIRUS_TIMER	PLAY_TICKS_TIMER1
+#define GAME_ENTITIES_DELAY_MS	20
+#define GAME_ENTITIES_TIMER	PLAY_TICKS_TIMER1
 
 #define GAME_TV_DELAY_MS	3000
 #define GAME_TV_TIMER		PLAY_TICKS_TIMER3
@@ -305,7 +305,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
  *   and the virus respawns somewhere
  * - if the newly infected thing is the adult, the game ends
  */
-static void update_viruses(play_t *play, game_t *game)
+static void update_entities(play_t *play, game_t *game)
 {
 	virus_search_t	search = { .game = game };
 
@@ -535,7 +535,7 @@ static void game_enter(play_t *play, void *context)
 	assert(game);
 
 	play_music_set(play, PLAY_MUSIC_FLAG_LOOP|PLAY_MUSIC_FLAG_IDEMPOTENT, "assets/game.ogg");
-	play_ticks_reset(play, GAME_VIRUS_TIMER);
+	play_ticks_reset(play, GAME_ENTITIES_TIMER);
 	stage_set_active(game->plasma_node, 1);
 	reset_game(game);
 }
@@ -551,8 +551,8 @@ static void game_update(play_t *play, void *context)
 
 	switch (game->state) {
 	case GAME_STATE_PLAYING: {
-		if (play_ticks_elapsed(play, GAME_VIRUS_TIMER, GAME_VIRUS_DELAY_MS))
-			update_viruses(play, game);
+		if (play_ticks_elapsed(play, GAME_ENTITIES_TIMER, GAME_ENTITIES_DELAY_MS))
+			update_entities(play, game);
 
 		if (play_ticks_elapsed(play, GAME_KBD_TIMER, GAME_KBD_DELAY_MS)) {
 			const Uint8	*key_state = SDL_GetKeyboardState(NULL);
