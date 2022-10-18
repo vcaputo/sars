@@ -147,11 +147,31 @@ static void hungrycat_leave(play_t *play, void *context)
 }
 
 
+static void hungrycat_dispatch(play_t *play, void *context, SDL_Event *event)
+{
+	/* global handlers */
+	sars_dispatch(play, context, event);
+
+	switch (event->type) {
+	case SDL_KEYDOWN:
+		if (event->key.keysym.sym == SDLK_ESCAPE)
+			exit(0);
+		/* fallthrough */
+	case SDL_FINGERDOWN:
+		play_context_enter(play, SARS_CONTEXT_GAME);
+		break;
+
+	default:
+		break;
+	}
+}
+
+
 const play_ops_t	hungrycat_ops = {
 	.init = hungrycat_init,
 	.update = hungrycat_update,
 	.render = sars_render,
-	.dispatch = sars_dispatch,
+	.dispatch = hungrycat_dispatch,
 	.enter = hungrycat_enter,
 	.leave = hungrycat_leave,
 };
