@@ -323,11 +323,10 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		sfx_play(sfx.baby_infected);
 		entity->any.type = ENTITY_TYPE_VIRUS;
 
+
 		(void) baby_new(search->game, search->game->babies_node);
 
-		reset_virus(search->virus);
-
-		return IX2_SEARCH_STOP_HIT;
+		return IX2_SEARCH_MORE_HIT;
 
 	case ENTITY_TYPE_ADULT:
 		/* convert adult into inanimate virus (off the viruses array) */
@@ -398,7 +397,8 @@ static void update_entities(play_t *play, game_t *game)
 			search.virus = virus;
 
 			/* search ix2 for collisions */
-			ix2_search_by_aabb(game->ix2, NULL, NULL, &virus->entity.aabb_x, virus_search, &search);
+			if (ix2_search_by_aabb(game->ix2, NULL, NULL, &virus->entity.aabb_x, virus_search, &search))
+				reset_virus(virus);
 		}
 	}
 }
