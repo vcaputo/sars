@@ -265,6 +265,48 @@ static void reset_virus(virus_t *virus)
 }
 
 
+static void infect_entity(game_t *game, entity_t *entity, const char *name)
+{
+	/* convert entity into inanimate virus (off the viruses array) */
+	(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = name, .active = 1, .alpha = 1.f }, &game->sars->projection_x, &entity->any.model_x);
+	sfx_play(sfx.baby_infected);
+	entity->any.type = ENTITY_TYPE_VIRUS;
+
+	/* stick entity on a new_infections list for potential propagation */
+	entity->virus.new_infections_next = game->new_infections;
+	game->new_infections = entity;
+}
+
+
+static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
+{
+	game_t		*game = cb_context;
+	entity_t	*entity = object;
+
+	switch (entity->any.type) {
+	case ENTITY_TYPE_BABY:
+		return IX2_SEARCH_MORE_MISS;
+
+	case ENTITY_TYPE_ADULT:
+		/* TODO: adult picks us up? */
+		return IX2_SEARCH_MORE_MISS;
+
+	case ENTITY_TYPE_VIRUS:
+		if (!stage_get_active(entity->any.node))
+			return IX2_SEARCH_MORE_MISS;
+
+		/* baby gets infected, return positive hit count */
+		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_TV:
+		return IX2_SEARCH_MORE_MISS;
+
+	default:
+		assert(0);
+	}
+}
+
+
 static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
 {
 	game_t		*game = cb_context;
@@ -290,6 +332,14 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 		delta = v2f_mult_scalar(&delta, GAME_TV_ATTRACTION);
 		entity->any.position = v2f_add(&entity->any.position, &delta);
 		entity_update_x(game, &entity->any);
+
+		/* check if the baby hit any viruses */
+		/* XXX: note this is a nested search, see ix2_new() call. */
+		if (ix2_search_by_aabb(game->ix2, NULL, NULL, &entity->any.aabb_x, baby_search, game)) {
+			/* baby hit a virus; infect it and spawn a replacement */
+			infect_entity(game, entity, "baby-virus");
+			(void) baby_new(game, game->babies_node);
+		}
 
 		return IX2_SEARCH_MORE_HIT;
 	}
@@ -320,15 +370,8 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
-		/* convert baby into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
-		sfx_play(sfx.baby_infected);
-		entity->any.type = ENTITY_TYPE_VIRUS;
-
-		/* stick entity on a new_infections list for potential propagation */
-		entity->virus.new_infections_next = search->game->new_infections;
-		search->game->new_infections = entity;
-
+		/* virus hit a baby; infect it and spawn a replacement */
+		infect_entity(search->game, entity, "baby-virus");
 		(void) baby_new(search->game, search->game->babies_node);
 
 		return IX2_SEARCH_MORE_HIT;
@@ -579,7 +622,7 @@ static void * game_init(play_t *play, int argc, char *argv[])
 	game->stage = sars->stage;
 	game->plasma_node = plasma_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "plasma", .alpha = 1 }, &sars->projection_x);
 
-	game->ix2 = ix2_new(NULL, 4, 4, 1 /* increase for nested searches */);
+	game->ix2 = ix2_new(NULL, 4, 4, 2 /* support two simultaneous searches: tv_search->baby_search */);
 
 	/* setup transformation matrices for the score digits, this is really fast and nasty hack because
 	 * I am completely delerious and ready to fall asleep.
