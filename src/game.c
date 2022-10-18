@@ -109,7 +109,7 @@ typedef struct virus_t {
 typedef struct adult_t {
 	entity_any_t	entity;
 	unsigned	rescues;
-	unsigned	frozen:1;
+	unsigned	captivated:1;
 	entity_t	*holding;
 } adult_t;
 
@@ -502,7 +502,8 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		if (!stage_get_active(entity->any.node))
 			return IX2_SEARCH_MORE_MISS;
 
-		game->adult->frozen = 1;
+		game->adult->captivated = 1;
+		sfx_play(sfx.adult_captivated);
 		return IX2_SEARCH_STOP_HIT;
 
 	default:
@@ -516,7 +517,7 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 	assert(game);
 	assert(dir);
 
-	if (game->adult->frozen)
+	if (game->adult->captivated)
 		return;
 
 	game->adult->entity.position.x += dir->x;
@@ -706,7 +707,7 @@ static void game_update(play_t *play, void *context)
 
 		if (play_ticks_elapsed(play, GAME_TV_TIMER, GAME_TV_DELAY_MS)) {
 			stage_set_active(game->tv->entity.node, 0);
-			game->adult->frozen = 0;
+			game->adult->captivated = 0;
 		}
 
 		break;
