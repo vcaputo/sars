@@ -103,6 +103,7 @@ typedef struct baby_t {
 
 typedef struct virus_t {
 	entity_any_t	entity;
+	entity_t	*new_infections_next;
 } virus_t;
 
 typedef struct adult_t {
@@ -146,6 +147,7 @@ typedef struct game_t {
 
 	adult_t		*adult;
 	tv_t		*tv;
+	entity_t	*new_infections;
 	virus_t		*viruses[GAME_NUM_VIRUSES];
 	m4f_t		score_digits_x[10];
 } game_t;
@@ -323,6 +325,9 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		sfx_play(sfx.baby_infected);
 		entity->any.type = ENTITY_TYPE_VIRUS;
 
+		/* stick entity on a new_infections list for potential propagation */
+		entity->virus.new_infections_next = search->game->new_infections;
+		search->game->new_infections = entity;
 
 		(void) baby_new(search->game, search->game->babies_node);
 
@@ -399,6 +404,16 @@ static void update_entities(play_t *play, game_t *game)
 			/* search ix2 for collisions */
 			if (ix2_search_by_aabb(game->ix2, NULL, NULL, &virus->entity.aabb_x, virus_search, &search))
 				reset_virus(virus);
+
+			/* propagate any new infections */
+			while (game->new_infections) {
+				entity_t	*infection = game->new_infections;
+
+				game->new_infections = infection->virus.new_infections_next;
+
+				search.virus = &infection->virus;
+				(void) ix2_search_by_aabb(game->ix2, NULL, NULL, &infection->virus.entity.aabb_x, virus_search, &search);
+			}
 		}
 	}
 }
