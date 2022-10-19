@@ -94,7 +94,7 @@ stage_t * tex_node_new_tex(stage_conf_t *conf, tex_t *tex, m4f_t *projection_x, 
 stage_t * tex_node_new_mem(stage_conf_t *conf, int width, int height, const unsigned char *buf, m4f_t *projection_x, m4f_t *model_x)
 {
 	tex_t	*tex = tex_new(width, height, buf);
-	stage_t	*stage = tex_node_new_tex(conf, tex_new(width, height, buf), projection_x, model_x);
+	stage_t	*stage = tex_node_new_tex(conf, tex, projection_x, model_x);
 
 	tex_free(tex);
 
