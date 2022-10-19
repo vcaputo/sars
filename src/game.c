@@ -23,6 +23,8 @@
 #include <stage.h>
 
 #include "adult-node.h"
+#include "adult-masked-node.h"
+#include "baby-hatted-node.h"
 #include "baby-node.h"
 #include "bb2f.h"
 #include "bb3f.h"
@@ -32,6 +34,7 @@
 #include "m4f-3dx.h"
 #include "m4f-bbx.h"
 #include "macros.h"
+#include "mask-node.h"
 #include "plasma-node.h"
 #include "sars.h"
 #include "sfx.h"
@@ -44,9 +47,12 @@
 
 #define GAME_VIRUS_SPEED	.01f
 #define GAME_ADULT_SPEED	.04f
+#define GAME_MASK_SPEED		.02f
 
 #define GAME_ENTITIES_DELAY_MS	20
 #define GAME_ENTITIES_TIMER	PLAY_TICKS_TIMER1
+
+#define GAME_MASK_PROTECTION	3
 
 #define GAME_TV_DELAY_MS	3000
 #define GAME_TV_TIMER		PLAY_TICKS_TIMER3
@@ -60,8 +66,9 @@
 #define GAME_OVER_DELAY_MS	1000
 #define GAME_OVER_TIMER		PLAY_TICKS_TIMER2
 
-#define GAME_BABY_SCALE		(v3f_t){ .05f, .05f, .05f }
 #define GAME_ADULT_SCALE	(v3f_t){ .07f, .07f, .07f }
+#define GAME_BABY_SCALE		(v3f_t){ .05f, .05f, .05f }
+#define GAME_MASK_SCALE		(v3f_t){ .07f, .07f, .07f }
 #define GAME_TV_SCALE		(v3f_t){ .15f, .15f, .15f }
 #define GAME_VIRUS_SCALE	(v3f_t){ .05f, .05f, .05f }
 #define GAME_DIGITS_SCALE	(v3f_t){ .05f, .05f, .05f }
@@ -83,6 +90,7 @@ typedef enum entity_type_t {
 	ENTITY_TYPE_ADULT,
 	ENTITY_TYPE_VIRUS,
 	ENTITY_TYPE_TV,
+	ENTITY_TYPE_MASK,
 } entity_type_t;
 
 typedef union entity_t entity_t;
@@ -97,6 +105,10 @@ typedef struct entity_any_t {
 	bb2f_t		aabb_x;
 } entity_any_t;
 
+typedef struct mask_t {
+	entity_any_t	entity;
+} mask_t;
+
 typedef struct baby_t {
 	entity_any_t	entity;
 } baby_t;
@@ -110,6 +122,7 @@ typedef struct adult_t {
 	entity_any_t	entity;
 	unsigned	rescues;
 	unsigned	captivated:1;
+	unsigned	masked;
 	entity_t	*holding;
 } adult_t;
 
@@ -119,10 +132,11 @@ typedef struct tv_t {
 
 union entity_t {
 	entity_any_t	any;
-	baby_t		baby;
-	virus_t		virus;
 	adult_t		adult;
+	baby_t		baby;
+	mask_t		mask;
 	tv_t		tv;
+	virus_t		virus;
 };
 
 typedef struct game_t {
@@ -147,6 +161,7 @@ typedef struct game_t {
 
 	adult_t		*adult;
 	tv_t		*tv;
+	mask_t		*mask;
 	entity_t	*new_infections;
 	virus_t		*viruses[GAME_NUM_VIRUSES];
 	m4f_t		score_digits_x[10];
@@ -218,6 +233,21 @@ static baby_t * baby_new(game_t *game, stage_t *parent)
 }
 
 
+static mask_t * mask_new(game_t *game, stage_t *parent)
+{
+	mask_t	*mask;
+
+	mask = pad_get(game->pad, sizeof(entity_t));
+	fatal_if(!mask, "unale to allocate mask_t");
+
+	mask->entity.type = ENTITY_TYPE_MASK;
+	mask->entity.node = mask_node_new(&(stage_conf_t){ .parent = parent, .name = "mask", .layer = 3, .alpha = 1.f }, &game->sars->projection_x, &mask->entity.model_x);
+	mask->entity.scale = GAME_MASK_SCALE;
+
+	return mask;
+}
+
+
 static tv_t * tv_new(game_t *game, stage_t *parent)
 {
 	tv_t	*tv;
@@ -278,9 +308,33 @@ static void infect_entity(game_t *game, entity_t *entity, const char *name)
 }
 
 
+static void hat_baby(game_t *game, baby_t *baby, mask_t *mask)
+{
+	(void) baby_hatted_node_new(&(stage_conf_t){ .stage = baby->entity.node, .replace = 1, .name = "baby-hatted", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
+
+	stage_set_active(mask->entity.node, 0);
+}
+
+
+static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
+{
+	(void) adult_masked_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
+
+	adult->masked = GAME_MASK_PROTECTION;
+
+	stage_set_active(mask->entity.node, 0);
+}
+
+
+typedef struct baby_search_t {
+	game_t	*game;
+	baby_t	*baby;
+} baby_search_t;
+
+
 static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
 {
-	game_t		*game = cb_context;
+	baby_search_t	*search = cb_context;
 	entity_t	*entity = object;
 
 	switch (entity->any.type) {
@@ -301,6 +355,12 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 	case ENTITY_TYPE_TV:
 		return IX2_SEARCH_MORE_MISS;
 
+	case ENTITY_TYPE_MASK:
+		if (stage_get_active(entity->any.node))
+			hat_baby(search->game, search->baby, &entity->mask);
+
+		return IX2_SEARCH_MORE_MISS;
+
 	default:
 		assert(0);
 	}
@@ -314,8 +374,9 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY: {
-		v2f_t	delta;
-		float	len;
+		baby_search_t	search = { .game = game, .baby = &entity->baby };
+		v2f_t		delta;
+		float		len;
 
 		/* skip held baby */
 		if (game->adult->holding == entity)
@@ -335,7 +396,7 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 
 		/* check if the baby hit any viruses */
 		/* XXX: note this is a nested search, see ix2_new() call. */
-		if (ix2_search_by_aabb(game->ix2, NULL, NULL, &entity->any.aabb_x, baby_search, game)) {
+		if (ix2_search_by_aabb(game->ix2, NULL, NULL, &entity->any.aabb_x, baby_search, &search)) {
 			/* baby hit a virus; infect it and spawn a replacement */
 			infect_entity(game, entity, "baby-virus");
 			(void) baby_new(game, game->babies_node);
@@ -350,6 +411,36 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 
 	case ENTITY_TYPE_VIRUS:
 	case ENTITY_TYPE_TV:
+	case ENTITY_TYPE_MASK:
+		return IX2_SEARCH_MORE_MISS;
+
+	default:
+		assert(0);
+	}
+}
+
+
+static ix2_search_status_t mask_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
+{
+	game_t		*game = cb_context;
+	entity_t	*entity = object;
+
+	switch (entity->any.type) {
+	case ENTITY_TYPE_BABY:
+		if (stage_get_active(game->mask->entity.node))
+			hat_baby(game, &entity->baby, game->mask);
+
+		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_ADULT:
+		if (stage_get_active(game->mask->entity.node))
+			mask_adult(game, &entity->adult, game->mask);
+
+		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_MASK: /* ignore self */
+	case ENTITY_TYPE_TV:
+	case ENTITY_TYPE_VIRUS: /* TODO: virus contaminates mask? */
 		return IX2_SEARCH_MORE_MISS;
 
 	default:
@@ -378,13 +469,23 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 
 	case ENTITY_TYPE_ADULT:
 		/* convert adult into inanimate virus (off the viruses array) */
+		if (entity->adult.masked) {
+			reset_virus(search->virus);
+
+			if (!--entity->adult.masked)
+				(void) adult_node_new(&(stage_conf_t){ .stage = search->game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &search->game->adult->entity.model_x);
+
+			return IX2_SEARCH_STOP_MISS;
+		}
+
 		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
 		sfx_play(sfx.adult_infected);
 		search->game->state = GAME_STATE_OVER;
 		return IX2_SEARCH_STOP_HIT;
 
-	case ENTITY_TYPE_VIRUS:
+	case ENTITY_TYPE_MASK: /* TODO: virus contaminates mask? */
 	case ENTITY_TYPE_TV:
+	case ENTITY_TYPE_VIRUS:
 		return IX2_SEARCH_MORE_MISS;
 
 	default:
@@ -413,6 +514,26 @@ static void update_entities(play_t *play, game_t *game)
 		game->tv->entity.position.y = randf();
 		entity_update_x(game, &game->tv->entity);
 		stage_set_active(game->tv->entity.node, 1);
+	}
+
+	if (randf() > .98f && !stage_get_active(game->mask->entity.node)) {
+		/* sometimes activate a mask powerup */
+		game->mask->entity.position.x = randf();
+		game->mask->entity.position.y = -1.2f;
+		entity_update_x(game, &game->mask->entity);
+		stage_set_active(game->mask->entity.node, 1);
+	}
+
+	if (stage_get_active(game->mask->entity.node)) { /* if the mask is on, move it and possibly retire it */
+		game->mask->entity.position.y += GAME_MASK_SPEED;
+		entity_update_x(game, &game->mask->entity);
+
+		/* did it hit something? */
+		if (!ix2_search_by_aabb(game->ix2, NULL,  NULL, &game->mask->entity.aabb_x, mask_search, game)) {
+			/* No?, is it off-screen? */
+			if (game->mask->entity.position.y > 1.2f)
+				stage_set_active(game->mask->entity.node, 0);
+		}
 	}
 
 	if (stage_get_active(game->tv->entity.node)) { /* if the TV is on, move nearby babies towards it */
@@ -487,6 +608,16 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		if (!stage_get_active(entity->any.node))
 			return IX2_SEARCH_MORE_MISS;
 
+		if (game->adult->masked) {
+			reset_virus(&entity->virus);
+
+			if (!--game->adult->masked)
+				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
+			reset_virus(&entity->virus);
+
+			return IX2_SEARCH_MORE_MISS;
+		}
+
 		/* convert adult into inanimate virus (off the viruses array) */
 		(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
 		sfx_play(sfx.adult_infected);
@@ -505,6 +636,12 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		game->adult->captivated = 1;
 		sfx_play(sfx.adult_captivated);
 		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_MASK:
+		if (stage_get_active(entity->any.node))
+			mask_adult(game, game->adult, &entity->mask);
+
+		return IX2_SEARCH_MORE_MISS;
 
 	default:
 		assert(0);
@@ -580,6 +717,7 @@ static void reset_game(game_t *game)
 	game->pad = pad_new(sizeof(entity_t) * 32, PAD_FLAGS_ZERO);
 
 	game->tv = tv_new(game, game->game_node);
+	game->mask = mask_new(game, game->game_node);
 	game->adult = adult_new(game, game->game_node);
 	for (int i = 0; i < NELEMS(game->viruses); i++)
 		game->viruses[i] = virus_new(game, game->viruses_node);
