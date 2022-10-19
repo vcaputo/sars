@@ -12,11 +12,14 @@ sars_SOURCES = \
 	digit-node.h \
 	game.c \
 	gfx/gfx-adult.h \
+	gfx/gfx-adult-masked.h \
 	gfx/gfx-baby.h \
+	gfx/gfx-baby-hatted.h \
 	gfx/gfx-eight.h \
 	gfx/gfx-five.h \
 	gfx/gfx-four.h \
 	gfx/gfx-hungrycat.h \
+	gfx/gfx-mask.h \
 	gfx/gfx-nine.h \
 	gfx/gfx-one.h \
 	gfx/gfx-seven.h \
