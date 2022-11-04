@@ -7,3 +7,6 @@
 [submodule "libix2"]
 	path = libix2
 	url = git://git.pengaru.com/libix2
+[submodule "libansr"]
+	path = libansr
+	url = git://git.pengaru.com/libansr
