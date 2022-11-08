@@ -16,8 +16,8 @@
 
 #include <stage.h>
 
+#include "ansr-tex.h"
 #include "baby-node.h"
-#include "gfx/gfx-baby.h"
 #include "tex.h"
 #include "tex-node.h"
 
@@ -26,7 +26,7 @@ static tex_t	*baby_tex;
 stage_t * baby_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!baby_tex)
-		baby_tex = tex_new(gfx_baby.width, gfx_baby.height, gfx_baby.pixel_data);
+		baby_tex = ansr_tex_new("assets/baby.ans", "assets/baby.mask.ans");
 
 	return tex_node_new_tex(conf, baby_tex, projection_x, model_x);
 }

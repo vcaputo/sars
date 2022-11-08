@@ -16,8 +16,8 @@
 
 #include <stage.h>
 
+#include "ansr-tex.h"
 #include "mask-node.h"
-#include "gfx/gfx-mask.h"
 #include "tex.h"
 #include "tex-node.h"
 
@@ -26,7 +26,7 @@ static tex_t	*mask_tex;
 stage_t * mask_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!mask_tex)
-		mask_tex = tex_new(gfx_mask.width, gfx_mask.height, gfx_mask.pixel_data);
+		mask_tex = ansr_tex_new("assets/mask.ans", "assets/mask.mask.ans");
 
 	return tex_node_new_tex(conf, mask_tex, projection_x, model_x);
 }

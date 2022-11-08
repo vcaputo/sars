@@ -16,8 +16,8 @@
 
 #include <stage.h>
 
+#include "ansr-tex.h"
 #include "baby-hatted-node.h"
-#include "gfx/gfx-baby-hatted.h"
 #include "tex.h"
 #include "tex-node.h"
 
@@ -26,7 +26,7 @@ static tex_t	*baby_hatted_tex;
 stage_t * baby_hatted_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!baby_hatted_tex)
-		baby_hatted_tex = tex_new(gfx_baby_hatted.width, gfx_baby_hatted.height, gfx_baby_hatted.pixel_data);
+		baby_hatted_tex = ansr_tex_new("assets/baby-hatted.ans", "assets/baby-hatted.mask.ans");
 
 	return tex_node_new_tex(conf, baby_hatted_tex, projection_x, model_x);
 }

@@ -16,12 +16,20 @@
 
 #include <stage.h>
 
-#include "gfx/gfx-hungrycat.h"
+#include "ansr-tex.h"
 #include "hungrycat-node.h"
+#include "tex.h"
 #include "tex-node.h"
 
 
 stage_t * hungrycat_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
-	return tex_node_new_mem(conf, gfx_hungrycat.width, gfx_hungrycat.height, gfx_hungrycat.pixel_data, projection_x, model_x);
+	tex_t	*tex;
+	stage_t	*s;
+
+	tex = ansr_tex_new("assets/hungrycat.ans", NULL);
+	s = tex_node_new_tex(conf, tex, projection_x, model_x);
+	tex_free(tex);
+
+	return s;
 }

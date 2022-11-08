@@ -16,8 +16,8 @@
 
 #include <stage.h>
 
+#include "ansr-tex.h"
 #include "virus-node.h"
-#include "gfx/gfx-virus.h"
 #include "tex.h"
 #include "tex-node.h"
 
@@ -26,7 +26,7 @@ static tex_t	*virus_tex;
 stage_t * virus_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!virus_tex)
-		virus_tex = tex_new(gfx_virus.width, gfx_virus.height, gfx_virus.pixel_data);
+		virus_tex = ansr_tex_new("assets/virus.ans", "assets/virus.mask.ans");
 
 	return tex_node_new_tex(conf, virus_tex, projection_x, model_x);
 }

@@ -17,31 +17,34 @@
 #include <assert.h>
 #include <stage.h>
 
+#include "ansr-tex.h"
 #include "tex.h"
 #include "tex-node.h"
 
-#include "gfx/gfx-zero.h"
-#include "gfx/gfx-one.h"
-#include "gfx/gfx-two.h"
-#include "gfx/gfx-three.h"
-#include "gfx/gfx-four.h"
-#include "gfx/gfx-five.h"
-#include "gfx/gfx-six.h"
-#include "gfx/gfx-seven.h"
-#include "gfx/gfx-eight.h"
-#include "gfx/gfx-nine.h"
+static const char	*digits_assets[10] = {
+	"assets/zero.ans",
+	"assets/one.ans",
+	"assets/two.ans",
+	"assets/three.ans",
+	"assets/four.ans",
+	"assets/five.ans",
+	"assets/six.ans",
+	"assets/seven.ans",
+	"assets/eight.ans",
+	"assets/nine.ans",
+};
 
-static const unsigned char	*digits_pixels[10] = {
-	gfx_zero.pixel_data,
-	gfx_one.pixel_data,
-	gfx_two.pixel_data,
-	gfx_three.pixel_data,
-	gfx_four.pixel_data,
-	gfx_five.pixel_data,
-	gfx_six.pixel_data,
-	gfx_seven.pixel_data,
-	gfx_eight.pixel_data,
-	gfx_nine.pixel_data,
+static const char	*digits_masks_assets[10] = {
+	"assets/zero.mask.ans",
+	"assets/one.mask.ans",
+	"assets/two.mask.ans",
+	"assets/three.mask.ans",
+	"assets/four.mask.ans",
+	"assets/five.mask.ans",
+	"assets/six.mask.ans",
+	"assets/seven.mask.ans",
+	"assets/eight.mask.ans",
+	"assets/nine.mask.ans",
 };
 
 static tex_t		*digits_tex[10];
@@ -54,7 +57,7 @@ stage_t * digit_node_new(stage_conf_t *conf, unsigned digit, m4f_t *projection_x
 	assert(digit < 10);
 
 	if (!digits_tex[digit])
-		digits_tex[digit] = tex_new(DIGIT_WIDTH, DIGIT_HEIGHT, digits_pixels[digit]);
+		digits_tex[digit] = ansr_tex_new(digits_assets[digit], digits_masks_assets[digit]);
 
 	return tex_node_new_tex(conf, digits_tex[digit], projection_x, model_x);
 }

@@ -16,8 +16,8 @@
 
 #include <stage.h>
 
+#include "ansr-tex.h"
 #include "tv-node.h"
-#include "gfx/gfx-tv.h"
 #include "tex.h"
 #include "tex-node.h"
 
@@ -26,7 +26,7 @@ static tex_t	*tv_tex;
 stage_t * tv_node_new(stage_conf_t *conf, m4f_t *projection_x, m4f_t *model_x)
 {
 	if (!tv_tex)
-		tv_tex = tex_new(gfx_tv.width, gfx_tv.height, gfx_tv.pixel_data);
+		tv_tex = ansr_tex_new("assets/tv.ans", "assets/tv.mask.ans");
 
 	return tex_node_new_tex(conf, tv_tex, projection_x, model_x);
 }
