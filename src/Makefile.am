@@ -68,5 +68,5 @@ sars_SOURCES = \
 	virus-node.c \
 	virus-node.h
 
-sars_CPPFLAGS = -I@top_srcdir@/libix2/src -I@top_srcdir@/libix2/libpad/src -I@top_srcdir@/libstage/src -I@top_srcdir@/libplay/src -ffast-math
-sars_LDADD = @top_builddir@/libix2/src/libix2.a @top_builddir@/libix2/libpad/src/libpad.a @top_builddir@/libstage/src/libstage.a @top_builddir@/libplay/src/libplay.a -lm -ldl
+sars_CPPFLAGS = -I@top_srcdir@/libansr/src -I@top_srcdir@/libix2/src -I@top_srcdir@/libix2/libpad/src -I@top_srcdir@/libstage/src -I@top_srcdir@/libplay/src -ffast-math
+sars_LDADD = @top_builddir@/libansr/src/libansr.a @top_builddir@/libix2/src/libix2.a @top_builddir@/libix2/libpad/src/libpad.a @top_builddir@/libstage/src/libstage.a @top_builddir@/libplay/src/libplay.a -lm -ldl

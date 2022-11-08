@@ -1,1 +1,1 @@
-SUBDIRS = libix2 libplay libstage src
+SUBDIRS = libansr libix2 libplay libstage src

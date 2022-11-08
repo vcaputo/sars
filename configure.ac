@@ -29,6 +29,7 @@ AC_CONFIG_FILES([
 ])
 
 AC_CONFIG_SUBDIRS([
+ libansr
  libix2
  libstage
  libplay
