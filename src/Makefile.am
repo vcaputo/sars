@@ -4,6 +4,8 @@ sars_SOURCES = \
 	adult-masked-node.h \
 	adult-node.c \
 	adult-node.h \
+	ansr-tex.c \
+	ansr-tex.h \
 	baby-hatted-node.c \
 	baby-hatted-node.h \
 	baby-node.c \
@@ -12,6 +14,7 @@ sars_SOURCES = \
 	bb3f.h \
 	clear-node.c \
 	clear-node.h \
+	cp437.h \
 	digit-node.c \
 	digit-node.h \
 	game.c \
