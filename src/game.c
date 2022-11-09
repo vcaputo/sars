@@ -241,7 +241,7 @@ static mask_t * mask_new(game_t *game, stage_t *parent)
 	fatal_if(!mask, "unale to allocate mask_t");
 
 	mask->entity.type = ENTITY_TYPE_MASK;
-	mask->entity.node = mask_node_new(&(stage_conf_t){ .parent = parent, .name = "mask", .layer = 3, .alpha = 1.f }, &game->sars->projection_x, &mask->entity.model_x);
+	mask->entity.node = mask_node_new(&(stage_conf_t){ .parent = parent, .name = "mask", .layer = 4, .alpha = 1.f }, &game->sars->projection_x, &mask->entity.model_x);
 	mask->entity.scale = GAME_MASK_SCALE;
 
 	return mask;
@@ -320,7 +320,7 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 {
 	(void) adult_masked_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
 
-	adult->masked = GAME_MASK_PROTECTION;
+	adult->masked += GAME_MASK_PROTECTION;
 
 	stage_set_active(mask->entity.node, 0);
 }
