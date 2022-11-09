@@ -41,6 +41,8 @@ sars_SOURCES = \
 	shader.h \
 	shader-node.c \
 	shader-node.h \
+	teepee-node.c \
+	teepee-node.h \
 	tex.c \
 	tex.h \
 	tex-node.c \
