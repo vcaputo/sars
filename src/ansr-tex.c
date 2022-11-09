@@ -92,7 +92,7 @@ static ansr_t * ansr_from_file(const char *path)
 	FILE		*f;
 	ansr_t		*a;
 
-	f = fopen(path, "r");
+	f = fopen(path, "rb");
 	if (!f)
 		return NULL;
 
