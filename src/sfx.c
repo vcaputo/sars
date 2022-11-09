@@ -28,6 +28,7 @@ void sfx_init(void)
 	sfx.baby_rescued = Mix_LoadWAV("assets/baby-rescued.wav");
 	sfx.adult_infected = Mix_LoadWAV("assets/adult-infected.wav");
 	sfx.adult_captivated = Mix_LoadWAV("assets/adult-captivated.wav");
+	sfx.adult_mine = Mix_LoadWAV("assets/adult-mine.wav");
 }
 
 

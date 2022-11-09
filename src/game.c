@@ -38,6 +38,7 @@
 #include "plasma-node.h"
 #include "sars.h"
 #include "sfx.h"
+#include "teepee-node.h"
 #include "tv-node.h"
 #include "v2f.h"
 #include "virus-node.h"
@@ -69,6 +70,8 @@
 #define GAME_ADULT_SCALE	(v3f_t){ .07f, .07f, .07f }
 #define GAME_BABY_SCALE		(v3f_t){ .05f, .05f, .05f }
 #define GAME_MASK_SCALE		(v3f_t){ .07f, .07f, .07f }
+#define GAME_TEEPEE_SCALE	(v3f_t){ .07f, .07f, .07f }
+#define GAME_TEEPEE_ICON_SCALE	(v3f_t){ .06f, .06f, .06f }
 #define GAME_TV_SCALE		(v3f_t){ .15f, .15f, .15f }
 #define GAME_VIRUS_SCALE	(v3f_t){ .05f, .05f, .05f }
 #define GAME_DIGITS_SCALE	(v3f_t){ .05f, .05f, .05f }
@@ -91,6 +94,7 @@ typedef enum entity_type_t {
 	ENTITY_TYPE_VIRUS,
 	ENTITY_TYPE_TV,
 	ENTITY_TYPE_MASK,
+	ENTITY_TYPE_TEEPEE,
 } entity_type_t;
 
 typedef union entity_t entity_t;
@@ -126,6 +130,10 @@ typedef struct adult_t {
 	entity_t	*holding;
 } adult_t;
 
+typedef struct teepee_t {
+	entity_any_t	entity;
+} teepee_t;
+
 typedef struct tv_t {
 	entity_any_t	entity;
 } tv_t;
@@ -135,6 +143,7 @@ union entity_t {
 	adult_t		adult;
 	baby_t		baby;
 	mask_t		mask;
+	teepee_t	teepee;
 	tv_t		tv;
 	virus_t		virus;
 };
@@ -159,9 +168,12 @@ typedef struct game_t {
 	ix2_t		*ix2;
 	pad_t		*pad;
 
+	unsigned	teepee_cnt;
+
 	adult_t		*adult;
 	tv_t		*tv;
 	mask_t		*mask;
+	teepee_t	*teepee;
 	entity_t	*new_infections;
 	virus_t		*viruses[GAME_NUM_VIRUSES];
 	m4f_t		score_digits_x[10];
@@ -248,6 +260,21 @@ static mask_t * mask_new(game_t *game, stage_t *parent)
 }
 
 
+static teepee_t * teepee_new(game_t *game, stage_t *parent)
+{
+	teepee_t	*teepee;
+
+	teepee = pad_get(game->pad, sizeof(entity_t));
+	fatal_if(!teepee, "unale to allocate teepee_t");
+
+	teepee->entity.type = ENTITY_TYPE_TEEPEE;
+	teepee->entity.node = teepee_node_new(&(stage_conf_t){ .parent = parent, .name = "teepee", .layer = 4, .alpha = 1.f }, &game->sars->projection_x, &teepee->entity.model_x);
+	teepee->entity.scale = GAME_TEEPEE_SCALE;
+
+	return teepee;
+}
+
+
 static tv_t * tv_new(game_t *game, stage_t *parent)
 {
 	tv_t	*tv;
@@ -326,6 +353,30 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 }
 
 
+static void more_teepee(game_t *game, teepee_t *teepee)
+{
+	{
+		teepee_t	*tp;
+
+		tp = pad_get(game->pad, sizeof(entity_t));
+		fatal_if(!tp, "unale to allocate teepee_t");
+
+		tp->entity.type = ENTITY_TYPE_TEEPEE;
+		tp->entity.scale = GAME_TEEPEE_ICON_SCALE;
+		/* TODO FIXME: clean this magic number salad up, there should probably just be a m4f_scale_scalar() wrapper for m4f_scale() that
+		 * takes a single scalar float and constructs the v3f_t{} to pass m4f_scale() using the input scalar for all dimensions... then
+		 * we'd have convenient scalars for the _SCALE defines and not these v3fs...  This works fine for now.
+		 */
+		tp->entity.node = teepee_node_new(&(stage_conf_t){ .parent = game->game_node, .name = "tp", .layer = 9, .alpha = 1.f, .active = 1 }, &game->sars->projection_x, &tp->entity.model_x);
+		tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = ((game->teepee_cnt % 16) * 0.0625f) * 1.9375f + -.9375f, .y = (.9687f - ((game->teepee_cnt / 16) * 0.0625f)) * 1.9375f + -.9375f, .z = 0.f });
+		tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
+	}
+	sfx_play(sfx.adult_mine);
+	game->teepee_cnt++;
+	stage_set_active(teepee->entity.node, 0);
+}
+
+
 typedef struct baby_search_t {
 	game_t	*game;
 	baby_t	*baby;
@@ -352,6 +403,7 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 		/* baby gets infected, return positive hit count */
 		return IX2_SEARCH_STOP_HIT;
 
+	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_TV:
 		return IX2_SEARCH_MORE_MISS;
 
@@ -359,6 +411,31 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 		if (stage_get_active(entity->any.node))
 			hat_baby(search->game, search->baby, &entity->mask);
 
+		return IX2_SEARCH_MORE_MISS;
+
+	default:
+		assert(0);
+	}
+}
+
+
+static ix2_search_status_t teepee_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
+{
+	game_t		*game = cb_context;
+	entity_t	*entity = object;
+
+	switch (entity->any.type) {
+	case ENTITY_TYPE_ADULT:
+		if (stage_get_active(game->teepee->entity.node))
+			more_teepee(game, game->teepee);
+
+		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_TEEPEE: /* ignore self */
+	case ENTITY_TYPE_BABY:
+	case ENTITY_TYPE_MASK:
+	case ENTITY_TYPE_TV:
+	case ENTITY_TYPE_VIRUS: /* TODO: virus contaminates teepee? */
 		return IX2_SEARCH_MORE_MISS;
 
 	default:
@@ -411,6 +488,7 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 
 	case ENTITY_TYPE_VIRUS:
 	case ENTITY_TYPE_TV:
+	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_MASK:
 		return IX2_SEARCH_MORE_MISS;
 
@@ -439,6 +517,7 @@ static ix2_search_status_t mask_search(void *cb_context, ix2_object_t *ix2_objec
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MASK: /* ignore self */
+	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_VIRUS: /* TODO: virus contaminates mask? */
 		return IX2_SEARCH_MORE_MISS;
@@ -484,6 +563,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MASK: /* TODO: virus contaminates mask? */
+	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_VIRUS:
 		return IX2_SEARCH_MORE_MISS;
@@ -524,6 +604,14 @@ static void update_entities(play_t *play, game_t *game)
 		stage_set_active(game->mask->entity.node, 1);
 	}
 
+	if (randf() > .45f && !stage_get_active(game->teepee->entity.node)) {
+		/* sometimes activate a teepee "powerup" */
+		game->teepee->entity.position.x = randf();
+		game->teepee->entity.position.y = -1.2f;
+		entity_update_x(game, &game->teepee->entity);
+		stage_set_active(game->teepee->entity.node, 1);
+	}
+
 	if (stage_get_active(game->mask->entity.node)) { /* if the mask is on, move it and possibly retire it */
 		game->mask->entity.position.y += GAME_MASK_SPEED;
 		entity_update_x(game, &game->mask->entity);
@@ -533,6 +621,18 @@ static void update_entities(play_t *play, game_t *game)
 			/* No?, is it off-screen? */
 			if (game->mask->entity.position.y > 1.2f)
 				stage_set_active(game->mask->entity.node, 0);
+		}
+	}
+
+	if (stage_get_active(game->teepee->entity.node)) { /* if the teepee is on, move it and possibly retire it */
+		game->teepee->entity.position.y += GAME_MASK_SPEED;
+		entity_update_x(game, &game->teepee->entity);
+
+		/* did it hit something? */
+		if (!ix2_search_by_aabb(game->ix2, NULL,  NULL, &game->teepee->entity.aabb_x, teepee_search, game)) {
+			/* No?, is it off-screen? */
+			if (game->teepee->entity.position.y > 1.2f)
+				stage_set_active(game->teepee->entity.node, 0);
 		}
 	}
 
@@ -643,6 +743,12 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 
 		return IX2_SEARCH_MORE_MISS;
 
+	case ENTITY_TYPE_TEEPEE:
+		if (stage_get_active(entity->any.node))
+			more_teepee(game, &entity->teepee);
+
+		return IX2_SEARCH_MORE_HIT;
+
 	default:
 		assert(0);
 	}
@@ -716,7 +822,9 @@ static void reset_game(game_t *game)
 
 	game->pad = pad_new(sizeof(entity_t) * 32, PAD_FLAGS_ZERO);
 
+	game->teepee_cnt = 0;
 	game->tv = tv_new(game, game->game_node);
+	game->teepee = teepee_new(game, game->game_node);
 	game->mask = mask_new(game, game->game_node);
 	game->adult = adult_new(game, game->game_node);
 	for (int i = 0; i < NELEMS(game->viruses); i++)
