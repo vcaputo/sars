@@ -132,6 +132,7 @@ typedef struct adult_t {
 
 typedef struct teepee_t {
 	entity_any_t	entity;
+	unsigned	quantity;
 } teepee_t;
 
 typedef struct tv_t {
@@ -355,7 +356,7 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 
 static void more_teepee(game_t *game, teepee_t *teepee)
 {
-	{
+	for (unsigned i = 0; i < teepee->quantity; i++) {
 		teepee_t	*tp;
 
 		tp = pad_get(game->pad, sizeof(entity_t));
@@ -370,9 +371,9 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 		tp->entity.node = teepee_node_new(&(stage_conf_t){ .parent = game->game_node, .name = "tp", .layer = 9, .alpha = 1.f, .active = 1 }, &game->sars->projection_x, &tp->entity.model_x);
 		tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = ((game->teepee_cnt % 16) * 0.0625f) * 1.9375f + -.9375f, .y = (.9687f - ((game->teepee_cnt / 16) * 0.0625f)) * 1.9375f + -.9375f, .z = 0.f });
 		tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
+		game->teepee_cnt++;
 	}
 	sfx_play(sfx.adult_mine);
-	game->teepee_cnt++;
 	stage_set_active(teepee->entity.node, 0);
 }
 
@@ -606,6 +607,26 @@ static void update_entities(play_t *play, game_t *game)
 
 	if (randf() > .45f && !stage_get_active(game->teepee->entity.node)) {
 		/* sometimes activate a teepee "powerup" */
+		static struct {
+			unsigned	qty;
+			float		chance;
+		} quantities[] = {
+			{ .qty =  4, .chance = .5 },
+			{ .qty =  6, .chance = .25 },
+			{ .qty =  9, .chance = .12 },
+			{ .qty = 12, .chance = .08 },
+			{ .qty = 18, .chance = .06 },
+			{ .qty = 24, .chance = .04 },
+			{ .qty = 30, .chance = .02 },
+			{ .qty = 36, .chance = .005 },
+		};
+
+		game->teepee->quantity = 1;
+		for (unsigned i = 0; i < NELEMS(quantities); i++) {
+			if (randf() * .5f + .5f <= quantities[i].chance)
+				game->teepee->quantity = quantities[i].qty;
+		}
+
 		game->teepee->entity.position.x = randf();
 		game->teepee->entity.position.y = -1.2f;
 		entity_update_x(game, &game->teepee->entity);
