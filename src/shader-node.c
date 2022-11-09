@@ -60,7 +60,7 @@ static const float	texcoords[] = {
 };
 
 
-static void shader_node_render(const stage_t *stage, void *object, float alpha, void *render_ctxt)
+static stage_render_func_ret_t shader_node_render(const stage_t *stage, void *object, float alpha, void *render_ctxt)
 {
 	shader_node_t	*shader_node = object;
 	unsigned	n_uniforms;
@@ -93,6 +93,8 @@ static void shader_node_render(const stage_t *stage, void *object, float alpha, 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glUseProgram(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	return STAGE_RENDER_FUNC_RET_CONTINUE;
 }
 
 

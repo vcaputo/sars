@@ -38,7 +38,7 @@ typedef struct tex_node_t {
 
 
 /* Render simply renders a texd texture onto the screen */
-static void tex_node_render(const stage_t *stage, void *object, float alpha, void *render_ctxt)
+static stage_render_func_ret_t tex_node_render(const stage_t *stage, void *object, float alpha, void *render_ctxt)
 {
 	tex_node_t	*tex_node = object;
 
@@ -46,6 +46,8 @@ static void tex_node_render(const stage_t *stage, void *object, float alpha, voi
 	assert(tex_node);
 
 	tex_render(tex_node->tex, alpha, tex_node->projection_x, tex_node->model_x);
+
+	return STAGE_RENDER_FUNC_RET_CONTINUE;
 }
 
 

@@ -23,9 +23,11 @@
 #include "macros.h"
 
 
-static void clear_node_render(const stage_t *stage, void *object, float alpha, void *render_ctxt)
+static stage_render_func_ret_t clear_node_render(const stage_t *stage, void *object, float alpha, void *render_ctxt)
 {
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+	return STAGE_RENDER_FUNC_RET_CONTINUE;
 }
 
 
