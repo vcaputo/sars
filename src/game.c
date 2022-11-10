@@ -28,6 +28,7 @@
 #include "baby-node.h"
 #include "bb2f.h"
 #include "bb3f.h"
+#include "bonus-node.h"
 #include "digit-node.h"
 #include "glad.h"
 #include "m4f.h"
@@ -133,6 +134,8 @@ typedef struct adult_t {
 typedef struct teepee_t {
 	entity_any_t	entity;
 	unsigned	quantity;
+	unsigned	*bonus_release;
+	v2f_t		*bonus_release_position;
 } teepee_t;
 
 typedef struct tv_t {
@@ -373,6 +376,8 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 		tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
 		game->teepee_cnt++;
 	}
+	(*teepee->bonus_release) = BONUS_NODE_RELEASE_MS;
+	(*teepee->bonus_release_position) = teepee->entity.position;
 	sfx_play(sfx.adult_mine);
 	stage_set_active(teepee->entity.node, 0);
 }
@@ -627,6 +632,14 @@ static void update_entities(play_t *play, game_t *game)
 				game->teepee->quantity = quantities[i].qty;
 		}
 
+		bonus_node_new(&(stage_conf_t){.parent = game->game_node, .active = 1, .alpha = 1.f, .name = "teepee-bonus", .layer = 6},
+			game->teepee->quantity,
+			&game->sars->projection_x,
+			&game->teepee->entity.position,
+			.03f/* FIXME magic number alert: bonus scale */,
+			&game->teepee->bonus_release,
+			&game->teepee->bonus_release_position);
+
 		game->teepee->entity.position.x = randf();
 		game->teepee->entity.position.y = -1.2f;
 		entity_update_x(game, &game->teepee->entity);
@@ -652,8 +665,11 @@ static void update_entities(play_t *play, game_t *game)
 		/* did it hit something? */
 		if (!ix2_search_by_aabb(game->ix2, NULL,  NULL, &game->teepee->entity.aabb_x, teepee_search, game)) {
 			/* No?, is it off-screen? */
-			if (game->teepee->entity.position.y > 1.2f)
+			if (game->teepee->entity.position.y > 1.2f) {
 				stage_set_active(game->teepee->entity.node, 0);
+				/* release the bonus immediately */
+				*(game->teepee->bonus_release) = 1;
+			}
 		}
 	}
 
