@@ -62,6 +62,8 @@
 #define GAME_TV_RANGE_MAX	.7f
 #define GAME_TV_ATTRACTION	.005f
 
+#define GAME_TP_WIN_THRESHOLD	256
+
 #define GAME_KBD_DELAY_MS	20
 #define GAME_KBD_TIMER		PLAY_TICKS_TIMER4
 
@@ -86,7 +88,8 @@ typedef enum game_state_t {
 	GAME_STATE_PLAYING,
 	GAME_STATE_OVER,
 	GAME_STATE_OVER_DELAY,
-	GAME_STATE_OVER_WAITING
+	GAME_STATE_OVER_WAITING,
+	GAME_STATE_OVER_WINNING,
 } game_state_t;
 
 typedef enum entity_type_t {
@@ -375,6 +378,8 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 		tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = ((game->teepee_cnt % 16) * 0.0625f) * 1.9375f + -.9375f, .y = (.9687f - ((game->teepee_cnt / 16) * 0.0625f)) * 1.9375f + -.9375f, .z = 0.f });
 		tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
 		game->teepee_cnt++;
+		if (game->teepee_cnt >= GAME_TP_WIN_THRESHOLD)
+			game->state = GAME_STATE_OVER_WINNING;
 	}
 	(*teepee->bonus_release) = BONUS_NODE_RELEASE_MS;
 	(*teepee->bonus_release_position) = teepee->entity.position;
@@ -997,6 +1002,7 @@ static void game_update(play_t *play, void *context)
 	}
 
 	case GAME_STATE_OVER:
+	case GAME_STATE_OVER_WINNING:	/* TODO: make this a distinct state with a win animation */
 		show_score(game);
 		play_ticks_reset(play, GAME_OVER_TIMER);
 		game->state = GAME_STATE_OVER_DELAY;
