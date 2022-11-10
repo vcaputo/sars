@@ -12,6 +12,8 @@ sars_SOURCES = \
 	baby-node.h \
 	bb2f.h \
 	bb3f.h \
+	bonus-node.c \
+	bonus-node.h \
 	clear-node.c \
 	clear-node.h \
 	cp437.h \
