@@ -223,7 +223,7 @@ static adult_t * adult_new(game_t *game, stage_t *parent)
 	adult_t	*adult;
 
 	adult = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!adult, "unale to allocate adult_t");
+	fatal_if(!adult, "unable to allocate adult_t");
 
 	adult->entity.type = ENTITY_TYPE_ADULT;
 	adult->entity.node = adult_node_new(&(stage_conf_t){ .parent = parent, .name = "adult", .layer = 3, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
@@ -239,7 +239,7 @@ static baby_t * baby_new(game_t *game, stage_t *parent)
 	baby_t	*baby;
 
 	baby = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!baby, "unale to allocate baby_t");
+	fatal_if(!baby, "unable to allocate baby_t");
 
 	baby->entity.type = ENTITY_TYPE_BABY;
 	baby->entity.node = baby_node_new(&(stage_conf_t){ .parent = parent, .name = "baby", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
@@ -257,7 +257,7 @@ static mask_t * mask_new(game_t *game, stage_t *parent)
 	mask_t	*mask;
 
 	mask = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!mask, "unale to allocate mask_t");
+	fatal_if(!mask, "unable to allocate mask_t");
 
 	mask->entity.type = ENTITY_TYPE_MASK;
 	mask->entity.node = mask_node_new(&(stage_conf_t){ .parent = parent, .name = "mask", .layer = 4, .alpha = 1.f }, &game->sars->projection_x, &mask->entity.model_x);
@@ -272,7 +272,7 @@ static teepee_t * teepee_new(game_t *game, stage_t *parent)
 	teepee_t	*teepee;
 
 	teepee = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!teepee, "unale to allocate teepee_t");
+	fatal_if(!teepee, "unable to allocate teepee_t");
 
 	teepee->entity.type = ENTITY_TYPE_TEEPEE;
 	teepee->entity.node = teepee_node_new(&(stage_conf_t){ .parent = parent, .name = "teepee", .layer = 4, .alpha = 1.f }, &game->sars->projection_x, &teepee->entity.model_x);
@@ -287,7 +287,7 @@ static tv_t * tv_new(game_t *game, stage_t *parent)
 	tv_t	*tv;
 
 	tv = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!tv, "unale to allocate tv_t");
+	fatal_if(!tv, "unable to allocate tv_t");
 
 	tv->entity.type = ENTITY_TYPE_TV;
 	tv->entity.node = tv_node_new(&(stage_conf_t){ .parent = parent, .name = "tv", .layer = 1, .alpha = 1.f }, &game->sars->projection_x, &tv->entity.model_x);
@@ -310,7 +310,7 @@ static virus_t * virus_new(game_t *game, stage_t *parent)
 	virus_t	*virus;
 
 	virus = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!virus, "unale to allocate virus_t");
+	fatal_if(!virus, "unable to allocate virus_t");
 
 	virus->entity.type = ENTITY_TYPE_VIRUS;
 	virus->entity.node = virus_node_new(&(stage_conf_t){ .parent = parent, .name = "virus", .alpha = 1.f }, &game->sars->projection_x, &virus->entity.model_x);
@@ -366,7 +366,7 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 		teepee_t	*tp;
 
 		tp = pad_get(game->pad, sizeof(entity_t));
-		fatal_if(!tp, "unale to allocate teepee_t");
+		fatal_if(!tp, "unable to allocate teepee_t");
 
 		tp->entity.type = ENTITY_TYPE_TEEPEE;
 		tp->entity.scale = GAME_TEEPEE_ICON_SCALE;
