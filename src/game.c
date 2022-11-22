@@ -189,7 +189,7 @@ typedef struct game_t {
 
 static inline float randf(void)
 {
-	return 2.f / RAND_MAX * rand() - 1.f;
+	return 2.f / (float)RAND_MAX * rand() - 1.f;
 }
 
 
