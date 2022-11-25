@@ -90,6 +90,8 @@ typedef enum game_state_t {
 	GAME_STATE_OVER_DELAY,
 	GAME_STATE_OVER_WAITING,
 	GAME_STATE_OVER_WINNING,
+	GAME_STATE_OVER_WINNING_DELAY,
+	GAME_STATE_OVER_WINNING_WAITING,
 } game_state_t;
 
 typedef enum entity_type_t {
@@ -99,6 +101,7 @@ typedef enum entity_type_t {
 	ENTITY_TYPE_TV,
 	ENTITY_TYPE_MASK,
 	ENTITY_TYPE_TEEPEE,
+	ENTITY_TYPE_TEEPEE_ICON,
 } entity_type_t;
 
 typedef union entity_t entity_t;
@@ -141,6 +144,11 @@ typedef struct teepee_t {
 	v2f_t		*bonus_release_position;
 } teepee_t;
 
+typedef struct teepee_icon_t {
+	entity_any_t		entity;
+	struct teepee_icon_t	*next;
+} teepee_icon_t;
+
 typedef struct tv_t {
 	entity_any_t	entity;
 } tv_t;
@@ -175,7 +183,9 @@ typedef struct game_t {
 	ix2_t		*ix2;
 	pad_t		*pad;
 
+	/* count of hoarded teepee and list of representative icons for animating @ win */
 	unsigned	teepee_cnt;
+	teepee_icon_t	*teepee_head;
 
 	adult_t		*adult;
 	tv_t		*tv;
@@ -196,6 +206,12 @@ static inline float randf(void)
 /* update the entity's transformation and position in the index */
 static void entity_update_x(game_t *game, entity_any_t *entity)
 {
+	/* icon entities aren't intended to get indexed spatially, so we don't really initialize them
+	 * fully for that purpose.  Right now it's just the teepee icon, but assert it never manages to
+	 * get passed here.  TODO: it probably makes sense to break icon tentities out to a separate
+	 * non-entity type that doesn't even have ix2 related members.
+	 */
+	assert(entity->type != ENTITY_TYPE_TEEPEE_ICON);
 
 	entity->model_x = m4f_translate(NULL, &(v3f_t){ entity->position.x, entity->position.y, 0.f });
 	entity->model_x = m4f_scale(&entity->model_x, &entity->scale);
@@ -363,20 +379,23 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 static void more_teepee(game_t *game, teepee_t *teepee)
 {
 	for (unsigned i = 0; i < teepee->quantity; i++) {
-		teepee_t	*tp;
+		teepee_icon_t	*tp;
 
 		tp = pad_get(game->pad, sizeof(entity_t));
-		fatal_if(!tp, "unable to allocate teepee_t");
+		fatal_if(!tp, "unable to allocate teepee_icon_t");
 
-		tp->entity.type = ENTITY_TYPE_TEEPEE;
+		tp->entity.type = ENTITY_TYPE_TEEPEE_ICON;
 		tp->entity.scale = GAME_TEEPEE_ICON_SCALE;
 		/* TODO FIXME: clean this magic number salad up, there should probably just be a m4f_scale_scalar() wrapper for m4f_scale() that
 		 * takes a single scalar float and constructs the v3f_t{} to pass m4f_scale() using the input scalar for all dimensions... then
 		 * we'd have convenient scalars for the _SCALE defines and not these v3fs...  This works fine for now.
 		 */
-		tp->entity.node = teepee_node_new(&(stage_conf_t){ .parent = game->game_node, .name = "tp", .layer = 9, .alpha = 1.f, .active = 1 }, &game->sars->projection_x, &tp->entity.model_x);
+		tp->entity.node = teepee_node_new(&(stage_conf_t){ .parent = game->game_node, .name = "tp-icon", .layer = 8, .alpha = 1.f, .active = 1 }, &game->sars->projection_x, &tp->entity.model_x);
 		tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = ((game->teepee_cnt % 16) * 0.0625f) * 1.9375f + -.9375f, .y = (.9687f - ((game->teepee_cnt / 16) * 0.0625f)) * 1.9375f + -.9375f, .z = 0.f });
 		tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
+
+		tp->next = game->teepee_head;
+		game->teepee_head = tp;
 		game->teepee_cnt++;
 		if (game->teepee_cnt >= GAME_TP_WIN_THRESHOLD)
 			game->state = GAME_STATE_OVER_WINNING;
@@ -860,11 +879,12 @@ static void reset_game(game_t *game)
 
 	game->babies_node = stage_new(&(stage_conf_t){ .parent = game->game_node, .name = "babies", .layer = 4, .alpha = 1.f }, NULL, NULL);
 	game->viruses_node = stage_new(&(stage_conf_t){ .parent = game->game_node, .name = "viruses", .layer = 5, .alpha = 1.f }, NULL, NULL);
-	game->score_node = stage_new(&(stage_conf_t){ .parent = game->game_node, .name = "score", .layer = 7, .alpha = 1 }, NULL, NULL);
+	game->score_node = stage_new(&(stage_conf_t){ .parent = game->game_node, .name = "score", .layer = 9, .alpha = 1 }, NULL, NULL);
 
 	game->pad = pad_new(sizeof(entity_t) * 32, PAD_FLAGS_ZERO);
 
 	game->teepee_cnt = 0;
+	game->teepee_head = NULL;
 	game->tv = tv_new(game, game->game_node);
 	game->teepee = teepee_new(game, game->game_node);
 	game->mask = mask_new(game, game->game_node);
@@ -1001,8 +1021,51 @@ static void game_update(play_t *play, void *context)
 		break;
 	}
 
+	/* winner game over states */
+	case GAME_STATE_OVER_WINNING:
+		show_score(game);
+		play_ticks_reset(play, GAME_OVER_TIMER);
+		game->state = GAME_STATE_OVER_WINNING_DELAY;
+		break;
+
+	case GAME_STATE_OVER_WINNING_DELAY: {
+		float		t = (float)(play_ticks(play, GAME_OVER_TIMER) * 1.f / (float)GAME_OVER_DELAY_MS);
+		teepee_icon_t	*tp = game->teepee_head;
+
+		if (t > 1.f) {
+			game->state = GAME_STATE_OVER_WINNING_WAITING;
+			break;
+		}
+
+		/* explode the hoarded TP */
+		for (size_t i = 0; tp != NULL; tp = tp->next, i++) {
+			tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = (((i % 16) * 0.0625f) * 1.9375f + -.9375f) * (1.f + t * 32.f), .y = ((.9687f - ((i / 16) * 0.0625f)) * 1.9375f + -.9375f) * (1.f + t * 32.f), .z = 0.f });
+			tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
+		}
+		break;
+	}
+
+	case GAME_STATE_OVER_WINNING_WAITING: {
+		teepee_icon_t	*tp = game->teepee_head;
+		float		t = (float)(play_ticks(play, GAME_OVER_TIMER) % 6283) * .005f;
+		float		r = sinf(t);
+
+		/* just do nothing while animating the teepee icons, waiting for a keypress of some kind */
+		for (size_t i = 0; tp != NULL; tp = tp->next, i++) {
+			tp->entity.model_x = m4f_translate(NULL,
+							&(v3f_t){
+								.x = ((i % 16) * 0.0625f) * 1.9375f + -.9375f,
+								.y = ((1.f - fmod((i / 16 * 0.0625f) + (float)(play_ticks(play, GAME_OVER_TIMER) % 10000) * .0001f, 1.f))) * 3.f - 1.5f,
+								.z = 0.f
+							});
+			tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
+			tp->entity.model_x = m4f_rotate(&tp->entity.model_x, &(v3f_t){ .x = 0.f, .y = 0.f, .z = 1.f }, r);
+		}
+		break;
+	}
+
+	/* loser game over states */
 	case GAME_STATE_OVER:
-	case GAME_STATE_OVER_WINNING:	/* TODO: make this a distinct state with a win animation */
 		show_score(game);
 		play_ticks_reset(play, GAME_OVER_TIMER);
 		game->state = GAME_STATE_OVER_DELAY;
@@ -1041,7 +1104,8 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 		if (event->key.keysym.sym == SDLK_ESCAPE)
 			exit(0);
 
-		if (game->state == GAME_STATE_OVER_WAITING) {
+		if (game->state == GAME_STATE_OVER_WAITING ||
+		    game->state == GAME_STATE_OVER_WINNING_WAITING) {
 			reset_game(game);
 			break;
 		}
@@ -1049,7 +1113,8 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 		break;
 
 	case SDL_FINGERDOWN:
-		if (game->state == GAME_STATE_OVER_WAITING)
+		if (game->state == GAME_STATE_OVER_WAITING ||
+		    game->state == GAME_STATE_OVER_WINNING_WAITING)
 			reset_game(game);
 		/* fallthrough */
 	case SDL_FINGERMOTION:
