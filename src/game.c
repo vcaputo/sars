@@ -977,6 +977,10 @@ static void game_update(play_t *play, void *context)
 			const Uint8	*key_state = SDL_GetKeyboardState(NULL);
 			v2f_t		dir = {}, *move = NULL;
 
+			/* TODO: acceleration curve for movement?  it'd enable more precise
+			 * negotiating of obstacles, but that's not really worthwhile until there's
+			 * pixel-precision collision detection...
+			 */
 			if (key_state[SDL_SCANCODE_LEFT] || key_state[SDL_SCANCODE_A]) {
 				dir.x += -GAME_ADULT_SPEED;
 				move = &dir;
@@ -998,19 +1002,21 @@ static void game_update(play_t *play, void *context)
 			}
 
 			if (game->touch.active) {
-				float	distance;
-
 				dir = v2f_sub(&game->touch.position, &game->adult->entity.position);
-				distance = v2f_length(&dir);
-				if (distance) {
-					dir = v2f_normalize(&dir);
-					dir = v2f_mult_scalar(&dir, distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED);
-					move = &dir;
-				}
+				move = &dir;
 			}
 
-			if (move)
+			if (move) {
+				float	distance;
+
+				distance = v2f_length(move);
+				if (distance) {
+					*move = v2f_normalize(move);
+					*move = v2f_mult_scalar(move, distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED);
+				}
+
 				game_move_adult(game, move);
+			}
 		}
 
 		if (play_ticks_elapsed(play, GAME_TV_TIMER, GAME_TV_DELAY_MS)) {
