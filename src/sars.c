@@ -15,6 +15,7 @@
  */
 
 #include <SDL.h>
+#include <unistd.h> /* for chdir() */
 
 #include <play.h>
 #include <stage.h>
@@ -228,6 +229,14 @@ sars_winmode_t sars_winmode_set(sars_t *sars, sars_winmode_t winmode)
 static void * sars_init(play_t *play, int argc, char *argv[])
 {
 	sars_t	*sars;
+	char	*base;
+
+	/* in case we're executed outside our dir, try chdir to it for assets/ */
+	warn_if(!(base = SDL_GetBasePath()), "unable to get base path");
+	if (base) {
+		warn_if(chdir(base) < 0, "unable to chdir(\"%s\")", base);
+		SDL_free(base);
+	}
 
 	sars = calloc(1, sizeof(sars_t));
 	fatal_if(!sars, "Unable to allocate sars_t");
