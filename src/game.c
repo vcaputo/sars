@@ -70,6 +70,9 @@
 #define GAME_OVER_DELAY_MS	1000
 #define GAME_OVER_TIMER		PLAY_TICKS_TIMER2
 
+#define GAME_FLASHERS_DELAY_MS	75
+#define GAME_FLASHERS_TIMER	PLAY_TICKS_TIMER5
+
 #define GAME_ADULT_SCALE	(v3f_t){ .07f, .07f, .07f }
 #define GAME_BABY_SCALE		(v3f_t){ .05f, .05f, .05f }
 #define GAME_MASK_SCALE		(v3f_t){ .07f, .07f, .07f }
@@ -105,8 +108,9 @@ typedef enum entity_type_t {
 } entity_type_t;
 
 typedef union entity_t entity_t;
+typedef struct entity_any_t entity_any_t;
 
-typedef struct entity_any_t {
+struct entity_any_t {
 	entity_type_t	type;
 	stage_t		*node;
 	ix2_object_t	*ix2_object;
@@ -114,7 +118,9 @@ typedef struct entity_any_t {
 	v3f_t		scale;
 	m4f_t		model_x;
 	bb2f_t		aabb_x;
-} entity_any_t;
+	entity_any_t	*flashers_next;
+	unsigned	flashes_remaining;
+};
 
 typedef struct mask_t {
 	entity_any_t	entity;
@@ -186,6 +192,7 @@ typedef struct game_t {
 	/* count of hoarded teepee and list of representative icons for animating @ win */
 	unsigned	teepee_cnt;
 	teepee_icon_t	*teepee_head;
+	entity_any_t	*flashers_on_head, *flashers_off_head;
 
 	adult_t		*adult;
 	tv_t		*tv;
@@ -373,6 +380,17 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 	adult->masked += GAME_MASK_PROTECTION;
 	sfx_play(sfx.adult_mine);
 	stage_set_active(mask->entity.node, 0);
+}
+
+
+static void flash_entity(game_t *game, entity_any_t *any, unsigned count)
+{
+	if (!any->flashes_remaining) {
+		any->flashers_next = game->flashers_on_head;
+		game->flashers_on_head = any;
+	}
+
+	any->flashes_remaining = count;
 }
 
 
@@ -890,6 +908,7 @@ static void reset_game(game_t *game)
 
 	game->teepee_cnt = 0;
 	game->teepee_head = NULL;
+	game->flashers_on_head = game->flashers_off_head = NULL;
 	game->tv = tv_new(game, game->game_node);
 	game->teepee = teepee_new(game, game->game_node);
 	game->mask = mask_new(game, game->game_node);
@@ -1027,6 +1046,40 @@ static void game_update(play_t *play, void *context)
 		if (play_ticks_elapsed(play, GAME_TV_TIMER, GAME_TV_DELAY_MS)) {
 			stage_set_active(game->tv->entity.node, 0);
 			game->adult->captivated = 0;
+		}
+
+		if (play_ticks_elapsed(play, GAME_FLASHERS_TIMER, GAME_FLASHERS_DELAY_MS)) {
+			entity_any_t	*new_off = NULL, *new_on = NULL;
+
+			if (game->flashers_on_head) {
+				for (entity_any_t *e = game->flashers_on_head, *e_next; e; e = e_next) {
+					e_next = e->flashers_next;
+
+					if (!e->flashes_remaining) {
+						e->flashers_next = NULL;
+						continue;
+					}
+
+					if (e->node)
+						stage_set_alpha(e->node, .25f);
+
+					e->flashes_remaining--;
+					e->flashers_next = new_off;
+					new_off = e;
+				}
+			}
+
+			if (game->flashers_off_head) {
+				for (entity_any_t *e = game->flashers_off_head; e; e = e->flashers_next) {
+					if (e->node)
+						stage_set_alpha(e->node, 1.f);
+				}
+
+				new_on = game->flashers_off_head;
+			}
+
+			game->flashers_off_head = new_off;
+			game->flashers_on_head = new_on;
 		}
 
 		break;
