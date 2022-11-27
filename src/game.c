@@ -391,7 +391,12 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 		 * we'd have convenient scalars for the _SCALE defines and not these v3fs...  This works fine for now.
 		 */
 		tp->entity.node = teepee_node_new(&(stage_conf_t){ .parent = game->game_node, .name = "tp-icon", .layer = 8, .alpha = 1.f, .active = 1 }, &game->sars->projection_x, &tp->entity.model_x);
-		tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = ((game->teepee_cnt % 16) * 0.0625f) * 1.9375f + -.9375f, .y = (.9687f - ((game->teepee_cnt / 16) * 0.0625f)) * 1.9375f + -.9375f, .z = 0.f });
+		tp->entity.model_x = m4f_translate(NULL,
+						&(v3f_t){
+							.x = ((game->teepee_cnt % 16) * 0.0625f) * 2.f - .9375f,
+							.y = (.9687f - ((game->teepee_cnt / 16) * 0.0625f)) * 1.9375f + -.9375f,
+							.z = 0.f
+						});
 		tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
 
 		tp->next = game->teepee_head;
@@ -1045,7 +1050,12 @@ static void game_update(play_t *play, void *context)
 
 		/* explode the hoarded TP */
 		for (size_t i = 0; tp != NULL; tp = tp->next, i++) {
-			tp->entity.model_x = m4f_translate(NULL, &(v3f_t){ .x = (((i % 16) * 0.0625f) * 1.9375f + -.9375f) * (1.f + t * 32.f), .y = ((.9687f - ((i / 16) * 0.0625f)) * 1.9375f + -.9375f) * (1.f + t * 32.f), .z = 0.f });
+			tp->entity.model_x = m4f_translate(NULL,
+							&(v3f_t){
+								.x = (((i % 16) * 0.0625f) * 2.f - .9375f) * (1.f + t * 32.f),
+								.y = ((.9687f - ((i / 16) * 0.0625f)) * 1.9375f + -.9375f) * (1.f + t * 32.f),
+								.z = 0.f
+							});
 			tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
 		}
 		break;
@@ -1060,7 +1070,7 @@ static void game_update(play_t *play, void *context)
 		for (size_t i = 0; tp != NULL; tp = tp->next, i++) {
 			tp->entity.model_x = m4f_translate(NULL,
 							&(v3f_t){
-								.x = ((i % 16) * 0.0625f) * 1.9375f + -.9375f,
+								.x = ((i % 16) * 0.0625f) * 2.f - .9375f,
 								.y = ((1.f - fmod((i / 16 * 0.0625f) + (float)(play_ticks(play, GAME_OVER_TIMER) % 10000) * .0001f, 1.f))) * 3.f - 1.5f,
 								.z = 0.f
 							});
