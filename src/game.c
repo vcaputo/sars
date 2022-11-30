@@ -118,6 +118,7 @@ struct entity_any_t {
 	v3f_t		scale;
 	m4f_t		model_x;
 	bb2f_t		aabb_x;
+	unsigned	flashing:1;
 	entity_any_t	*flashers_next;
 	unsigned	flashes_remaining;
 };
@@ -385,7 +386,8 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 
 static void flash_entity(game_t *game, entity_any_t *any, unsigned count)
 {
-	if (!any->flashes_remaining) {
+	if (!any->flashing) {
+		any->flashing = 1;
 		any->flashers_next = game->flashers_on_head;
 		game->flashers_on_head = any;
 	}
@@ -1068,6 +1070,7 @@ static void game_update(play_t *play, void *context)
 					e_next = e->flashers_next;
 
 					if (!e->flashes_remaining) {
+						e->flashing = 0;
 						e->flashers_next = NULL;
 						continue;
 					}
