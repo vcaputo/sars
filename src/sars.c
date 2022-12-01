@@ -269,12 +269,26 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 		/* TODO: add --fullscreen? */
 	}
 
+#ifdef __EMSCRIPTEN__
+/* XXX only request an actual GLES2 context on emscripten,
+ * everywhere else (macos/win/linux) GL2.1 seems to be far more reliably available.
+ * Let's just hope limiting our API/shader use to GLES2 can be a happy compromise on
+ * a GL2.1 context - apparently it's largely a subset of GL2.1.
+ */
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES) < 0,
 		"Unable to set GL core profile attribute");
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) < 0,
 		"Unable to set GL major version attribute");
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0) < 0,
 		"Unable to set GL minor version attribute");
+#else
+	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) < 0,
+		"Unable to set GL core profile attribute");
+	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2) < 0,
+		"Unable to set GL major version attribute");
+	fatal_if(SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1) < 0,
+		"Unable to set GL minor version attribute");
+#endif
 	fatal_if(SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1) < 0,
 		"Unable to set GL doublebuffer attribute");
 
