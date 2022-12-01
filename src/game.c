@@ -54,6 +54,9 @@
 #define GAME_ENTITIES_DELAY_MS	20
 #define GAME_ENTITIES_TIMER	PLAY_TICKS_TIMER1
 
+#define GAME_NEWBABIES_DELAY_MS	500
+#define GAME_NEWBABIES_TIMER	PLAY_TICKS_TIMER6
+
 #define GAME_MASK_PROTECTION	3
 
 #define GAME_TV_DELAY_MS	3000
@@ -127,9 +130,11 @@ typedef struct mask_t {
 	entity_any_t	entity;
 } mask_t;
 
-typedef struct baby_t {
+typedef struct baby_t baby_t;
+struct baby_t {
 	entity_any_t	entity;
-} baby_t;
+	baby_t		*rescues_next;
+};
 
 typedef struct virus_t {
 	entity_any_t	entity;
@@ -194,6 +199,8 @@ typedef struct game_t {
 	unsigned	teepee_cnt;
 	teepee_icon_t	*teepee_head;
 	entity_any_t	*flashers_on_head, *flashers_off_head;
+	baby_t		*rescues_head;
+	unsigned	babies_cnt;
 
 	adult_t		*adult;
 	tv_t		*tv;
@@ -258,16 +265,19 @@ static adult_t * adult_new(game_t *game, stage_t *parent)
 }
 
 
-static baby_t * baby_new(game_t *game, stage_t *parent)
+static baby_t * baby_new(game_t *game, stage_t *parent, baby_t *rescue)
 {
-	baby_t	*baby;
+	baby_t	*baby = rescue;
 
-	baby = pad_get(game->pad, sizeof(entity_t));
-	fatal_if(!baby, "unable to allocate baby_t");
+	if (!baby) {
+		baby = pad_get(game->pad, sizeof(entity_t));
+		fatal_if(!baby, "unable to allocate baby_t");
+		baby->entity.type = ENTITY_TYPE_BABY;
+		baby->entity.node = baby_node_new(&(stage_conf_t){ .parent = parent, .name = "baby", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
+		baby->entity.scale = GAME_BABY_SCALE;
+	} else
+		stage_set_active(baby->entity.node, 1);
 
-	baby->entity.type = ENTITY_TYPE_BABY;
-	baby->entity.node = baby_node_new(&(stage_conf_t){ .parent = parent, .name = "baby", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
-	baby->entity.scale = GAME_BABY_SCALE;
 	baby->entity.position.x = randf();
 	baby->entity.position.y = randf();
 	entity_update_x(game, &baby->entity);
@@ -519,6 +529,10 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 		v2f_t		delta;
 		float		len;
 
+		/* skip inactive babies, since rescues can linger inactive til respawned */
+		if (!stage_get_active(entity->any.node))
+			return IX2_SEARCH_MORE_MISS;
+
 		/* skip held baby */
 		if (game->adult->holding == entity)
 			return IX2_SEARCH_MORE_MISS;
@@ -540,7 +554,7 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 		if (ix2_search_by_aabb(game->ix2, NULL, NULL, &entity->any.aabb_x, baby_search, &search)) {
 			/* baby hit a virus; infect it and spawn a replacement */
 			infect_entity(game, entity, "baby-virus");
-			(void) baby_new(game, game->babies_node);
+			game->babies_cnt--;
 		}
 
 		return IX2_SEARCH_MORE_HIT;
@@ -569,6 +583,10 @@ static ix2_search_status_t mask_search(void *cb_context, ix2_object_t *ix2_objec
 
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
+		/* skip inactive babies, since rescues can linger inactive til respawned */
+		if (!stage_get_active(entity->any.node))
+			return IX2_SEARCH_MORE_MISS;
+
 		if (stage_get_active(game->mask->entity.node))
 			hat_baby(game, &entity->baby, game->mask);
 
@@ -604,9 +622,13 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
+		/* skip inactive babies, since rescues can linger inactive til respawned */
+		if (!stage_get_active(entity->any.node))
+			return IX2_SEARCH_MORE_MISS;
+
 		/* virus hit a baby; infect it and spawn a replacement */
 		infect_entity(search->game, entity, "baby-virus");
-		(void) baby_new(search->game, search->game->babies_node);
+		search->game->babies_cnt--;
 
 		return IX2_SEARCH_MORE_HIT;
 
@@ -891,10 +913,13 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 			/* rescued baby */
 			sfx_play(sfx.baby_rescued);
 
-			game->adult->holding->any.position.x = randf();
-			game->adult->holding->any.position.y = randf();
-			entity_update_x(game, &game->adult->holding->any);
+			/* make the rescued baby available for respawn reuse */
 			game->adult->holding->any.flashes_remaining = 0;
+			stage_set_active(game->adult->holding->any.node, 0);
+			game->adult->holding->baby.rescues_next = game->rescues_head;
+			game->rescues_head = &game->adult->holding->baby;
+			game->babies_cnt--;
+
 			game->adult->holding = NULL;
 			game->adult->rescues++;
 		}
@@ -923,6 +948,7 @@ static void reset_game(game_t *game)
 	game->teepee_cnt = 0;
 	game->teepee_head = NULL;
 	game->flashers_on_head = game->flashers_off_head = NULL;
+	game->rescues_head = NULL;
 	game->tv = tv_new(game, game->game_node);
 	game->teepee = teepee_new(game, game->game_node);
 	game->mask = mask_new(game, game->game_node);
@@ -930,8 +956,9 @@ static void reset_game(game_t *game)
 	for (int i = 0; i < NELEMS(game->viruses); i++)
 		game->viruses[i] = virus_new(game, game->viruses_node);
 
-	for (int i = 0; i < GAME_NUM_BABIES; i++)
-		(void) baby_new(game, game->babies_node);
+	game->babies_cnt = GAME_NUM_BABIES;
+	for (int i = 0; i < game->babies_cnt; i++)
+		(void) baby_new(game, game->babies_node, NULL);
 
 	stage_set_active(game->adult->entity.node, 1);
 	stage_set_active(game->babies_node, 1);
@@ -1095,6 +1122,23 @@ static void game_update(play_t *play, void *context)
 
 			game->flashers_off_head = new_off;
 			game->flashers_on_head = new_on;
+		}
+
+		if (play_ticks_elapsed(play, GAME_NEWBABIES_TIMER, GAME_NEWBABIES_DELAY_MS)) {
+			for (unsigned n = GAME_NUM_BABIES - game->babies_cnt; n > 0; n--) {
+				baby_search_t	search = { .game = game, .baby = game->rescues_head };
+
+				if (search.baby)
+					game->rescues_head = search.baby->rescues_next;
+
+				search.baby = baby_new(game, game->babies_node, search.baby);
+
+				/* check if the new baby is immediately infected */
+				if (ix2_search_by_aabb(game->ix2, NULL, NULL, &search.baby->entity.aabb_x, baby_search, &search))
+					infect_entity(game, (entity_t *)search.baby, "baby-virus");
+				else
+					game->babies_cnt++;
+			}
 		}
 
 		break;
