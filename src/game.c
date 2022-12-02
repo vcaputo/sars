@@ -648,6 +648,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
 		sfx_play(sfx.adult_infected);
 		search->game->state = GAME_STATE_OVER;
+
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MASK: /* TODO: virus contaminates mask? */
@@ -828,8 +829,6 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			return IX2_SEARCH_MORE_MISS;
 
 		if (game->adult->masked) {
-			reset_virus(&entity->virus);
-
 			if (!--game->adult->masked)
 				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
 			flash_entity(game, &game->adult->entity, 4);
