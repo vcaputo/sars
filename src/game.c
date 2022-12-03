@@ -143,6 +143,7 @@ struct baby_t {
 
 typedef struct virus_t {
 	entity_any_t	entity;
+	unsigned	corpse:1;
 	entity_t	*new_infections_next;
 } virus_t;
 
@@ -374,6 +375,7 @@ static void infect_entity(game_t *game, entity_t *entity, const char *name)
 	(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = name, .active = 1, .alpha = 1.f }, &game->sars->projection_x, &entity->any.model_x);
 	sfx_play(sfx.baby_infected);
 	entity->any.type = ENTITY_TYPE_VIRUS;
+	entity->virus.corpse = 1;
 
 	/* stick entity on a new_infections list for potential propagation */
 	entity->virus.new_infections_next = game->new_infections;
@@ -478,6 +480,10 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 	case ENTITY_TYPE_VIRUS:
 		if (!stage_get_active(entity->any.node))
 			return IX2_SEARCH_MORE_MISS;
+
+		/* only non-corpse viruses should be reset by baby contact */
+		if (!entity->virus.corpse)
+			reset_virus(&entity->virus);
 
 		/* baby gets infected, return positive hit count */
 		return IX2_SEARCH_STOP_HIT;
