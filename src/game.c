@@ -85,6 +85,11 @@
 #define GAME_VIRUS_SCALE	(v3f_t){ .05f, .05f, .05f }
 #define GAME_DIGITS_SCALE	(v3f_t){ .05f, .05f, .05f }
 
+#define GAME_TV_CHANCE		.05f
+#define GAME_MASK_CHANCE	.02f
+#define GAME_TEEPEE_CHANCE	.55f
+
+
 /* every entity just starts with a unit cube AABB and is transformed with a matrix into its position,
  * so here's a convenient aabb to feed into those transformations as needed.
  */
@@ -675,7 +680,7 @@ static void update_entities(play_t *play, game_t *game)
 	assert(play);
 	assert(game);
 
-	if (randf() > .95f && !stage_get_active(game->tv->entity.node)) {
+	if (randf() > (1.f - GAME_TV_CHANCE) && !stage_get_active(game->tv->entity.node)) {
 		/* sometimes turn on the TV at a random location, we
 		 * get stuck to it */
 		play_ticks_reset(play, GAME_TV_TIMER);
@@ -685,7 +690,7 @@ static void update_entities(play_t *play, game_t *game)
 		stage_set_active(game->tv->entity.node, 1);
 	}
 
-	if (randf() > .98f && !stage_get_active(game->mask->entity.node)) {
+	if (randf() > (1.f - GAME_MASK_CHANCE) && !stage_get_active(game->mask->entity.node)) {
 		/* sometimes activate a mask powerup */
 		game->mask->entity.position.x = randf();
 		game->mask->entity.position.y = -1.2f;
@@ -693,7 +698,7 @@ static void update_entities(play_t *play, game_t *game)
 		stage_set_active(game->mask->entity.node, 1);
 	}
 
-	if (randf() > .45f && !stage_get_active(game->teepee->entity.node)) {
+	if (randf() > (1.f - GAME_TEEPEE_CHANCE) && !stage_get_active(game->teepee->entity.node)) {
 		/* sometimes activate a teepee "powerup" */
 		static struct {
 			unsigned	qty;
