@@ -706,12 +706,12 @@ static void update_entities(play_t *play, game_t *game)
 		} quantities[] = {
 			{ .qty =  4, .chance = .25 },
 			{ .qty =  6, .chance = .125 },
-			{ .qty =  9, .chance = .06 },
-			{ .qty = 12, .chance = .04 },
-			{ .qty = 18, .chance = .03 },
-			{ .qty = 24, .chance = .02 },
-			{ .qty = 30, .chance = .01 },
-			{ .qty = 36, .chance = .001 },
+			{ .qty =  9, .chance = .08 },
+			{ .qty = 12, .chance = .07 },
+			{ .qty = 18, .chance = .06 },
+			{ .qty = 24, .chance = .03 },
+			{ .qty = 30, .chance = .02 },
+			{ .qty = 36, .chance = .003 },
 		};
 
 		game->teepee->quantity = 1;
