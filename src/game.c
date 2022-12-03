@@ -48,7 +48,8 @@
 #define GAME_NUM_BABIES		10
 
 #define GAME_VIRUS_SPEED	.01f
-#define GAME_ADULT_SPEED	.04f
+#define GAME_ADULT_SPEED	.05f
+#define GAME_ADULT_ACCEL	.25f
 #define GAME_MASK_SPEED		.02f
 
 #define GAME_ENTITIES_DELAY_MS	20
@@ -1051,6 +1052,7 @@ static void game_update(play_t *play, void *context)
 		if (play_ticks_elapsed(play, GAME_KBD_TIMER, GAME_KBD_DELAY_MS)) {
 			const Uint8	*key_state = SDL_GetKeyboardState(NULL);
 			v2f_t		dir = {}, *move = NULL;
+			static float	velocity;
 
 			/* TODO: acceleration curve for movement?  it'd enable more precise
 			 * negotiating of obstacles, but that's not really worthwhile until there's
@@ -1084,14 +1086,20 @@ static void game_update(play_t *play, void *context)
 			if (move) {
 				float	distance;
 
+				if (velocity < 1.f)
+					velocity += GAME_ADULT_ACCEL;
+				if (velocity > 1.f)
+					velocity = 1.f;
+
 				distance = v2f_length(move);
 				if (distance) {
 					*move = v2f_normalize(move);
-					*move = v2f_mult_scalar(move, distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED);
+					*move = v2f_mult_scalar(move, velocity * (distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED));
 				}
 
 				game_move_adult(game, move);
-			}
+			} else
+				velocity = 0;
 		}
 
 		if (play_ticks_elapsed(play, GAME_TV_TIMER, GAME_TV_DELAY_MS)) {
