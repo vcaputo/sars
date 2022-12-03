@@ -19,6 +19,8 @@
 
 #include <play.h>
 #include <stage.h>
+#include <time.h> /* for time() */
+#include <unistd.h> /* for getpid() */
 
 #include "clear-node.h"
 #include "glad.h"
@@ -362,6 +364,9 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 #endif
 
 	sars_update_projection_x(sars);
+
+	/* sars uses rand() a lot, but every game should be different. */
+	srand(time(NULL) + getpid());
 
 	return sars;
 }
