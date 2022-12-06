@@ -735,6 +735,9 @@ static void update_entities(play_t *play, game_t *game)
 				game->teepee->quantity = quantities[i].qty;
 		}
 
+		if (game->sars->cheat)
+			game->teepee->quantity = 128;
+
 		bonus_node_new(&(stage_conf_t){.parent = game->game_node, .active = 1, .alpha = 1.f, .name = "teepee-bonus", .layer = 6},
 			game->teepee->quantity,
 			&game->sars->projection_x,

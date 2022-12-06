@@ -43,6 +43,7 @@ typedef struct sars_t {
 	stage_t		*stage;
 	unsigned	window_width, window_height;
 	sars_winmode_t	winmode;
+	unsigned	cheat:1;
 
 	m4f_t		projection_x;
 	m4f_t		projection_x_inv;

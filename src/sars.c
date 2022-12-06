@@ -236,6 +236,33 @@ sars_winmode_t sars_winmode_set(sars_t *sars, sars_winmode_t winmode)
 }
 
 
+/* returns -errno on failure, 0 on success
+ * but prints errors/warnings so the caller probably doesn't
+ * care about the errno beyond being a negative value.
+ */
+static int sars_parse_argv(sars_t *sars, int argc, char *argv[])
+{
+	for (int i = 1; i < argc; i++) {
+		char	*flag = argv[i];
+
+		if (!strcmp(flag, "--window")) {
+			sars->winmode = SARS_WINMODE_WINDOW; /* this is kinda redundant since we default to windowed now (except on emscripten) */
+			if (i + 1 < argc && argv[i + 1][0] != '-' && argv[i + 1][1] != '-') {
+				/* --window WxH is optionally supported */
+				sscanf(argv[i + 1], "%ux%u", &sars->window_width, &sars->window_height); /* FIXME: parse errors */
+				i++;
+			}
+		} else if (!strcmp(flag, "--cheat")) {
+			sars->cheat = 1;
+		} else {
+			warn_if(1, "Unsupported flag \"%s\", ignoring", argv[i]);
+		} /* TODO: add --fullscreen? */
+	}
+
+	return 0;
+}
+
+
 static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 {
 	sars_t	*sars;
@@ -260,16 +287,7 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 	sars->window_height = SARS_DEFAULT_HEIGHT;
 	sars->winmode = SARS_DEFAULT_WINMODE;
 
-	if (argc > 1) {
-		/* for now just support --window [WxH] */
-		if (!strcasecmp(argv[1], "--window")) {
-			sars->winmode = SARS_WINMODE_WINDOW; /* this is kinda redundant since we default to windowed now */
-
-			if (argc > 2)
-				sscanf(argv[2], "%ux%u", &sars->window_width, &sars->window_height);
-		}
-		/* TODO: add --fullscreen? */
-	}
+	fatal_if(sars_parse_argv(sars, argc, argv) < 0, "Unable to parse argv");
 
 #ifdef __EMSCRIPTEN__
 /* XXX only request an actual GLES2 context on emscripten,
