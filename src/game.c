@@ -655,8 +655,10 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		if (entity->adult.masked) {
 			reset_virus(search->virus);
 
-			if (!--entity->adult.masked)
-				(void) adult_node_new(&(stage_conf_t){ .stage = search->game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &search->game->adult->entity.model_x);
+			if (!--entity->adult.masked) {
+				(void) adult_node_new(&(stage_conf_t){ .stage = search->game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &search->game->adult->entity.model_x);
+				sfx_play(sfx.adult_unmasked);
+			}
 
 			(void) flash_entity(search->game, &entity->any, 4);
 
@@ -847,9 +849,10 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			return IX2_SEARCH_MORE_MISS;
 
 		if (game->adult->masked) {
-			if (!--game->adult->masked)
-				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
-			flash_entity(game, &game->adult->entity, 4);
+			if (!--game->adult->masked) {
+				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
+				sfx_play(sfx.adult_unmasked);
+			}
 			(void) flash_entity(game, &game->adult->entity, 4);
 			reset_virus(&entity->virus);
 

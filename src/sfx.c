@@ -30,6 +30,7 @@ void sfx_init(void)
 	sfx.adult_infected = Mix_LoadWAV("assets/adult-infected.wav");
 	sfx.adult_captivated = Mix_LoadWAV("assets/adult-captivated.wav");
 	sfx.adult_mine = Mix_LoadWAV("assets/adult-mine.wav");
+	sfx.adult_unmasked = Mix_LoadWAV("assets/adult-unmasked.wav");
 }
 
 
