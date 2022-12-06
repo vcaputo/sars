@@ -941,7 +941,7 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 }
 
 
-static void reset_game(game_t *game)
+static void reset_game(play_t *play, game_t *game)
 {
 	ix2_reset(game->ix2);
 	stage_free(game->game_node);
@@ -974,6 +974,8 @@ static void reset_game(game_t *game)
 	stage_set_active(game->adult->entity.node, 1);
 	stage_set_active(game->babies_node, 1);
 	stage_set_active(game->viruses_node, 1);
+
+	play_music_set(play, PLAY_MUSIC_FLAG_LOOP|PLAY_MUSIC_FLAG_IDEMPOTENT, "assets/game.ogg");
 
 	game->state = GAME_STATE_PLAYING;
 }
@@ -1029,10 +1031,9 @@ static void game_enter(play_t *play, void *context)
 
 	assert(game);
 
-	play_music_set(play, PLAY_MUSIC_FLAG_LOOP|PLAY_MUSIC_FLAG_IDEMPOTENT, "assets/game.ogg");
 	play_ticks_reset(play, GAME_ENTITIES_TIMER);
 	stage_set_active(game->plasma_node, 1);
-	reset_game(game);
+	reset_game(play, game);
 }
 
 
@@ -1252,7 +1253,7 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 
 		if (game->state == GAME_STATE_OVER_WAITING ||
 		    game->state == GAME_STATE_OVER_WINNING_WAITING) {
-			reset_game(game);
+			reset_game(play, game);
 			break;
 		}
 
@@ -1261,7 +1262,7 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 	case SDL_FINGERDOWN:
 		if (game->state == GAME_STATE_OVER_WAITING ||
 		    game->state == GAME_STATE_OVER_WINNING_WAITING)
-			reset_game(game);
+			reset_game(play, game);
 		/* fallthrough */
 	case SDL_FINGERMOTION:
 		if ((game->touch.active &&
