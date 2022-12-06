@@ -23,6 +23,7 @@ typedef struct sfx_t {
 	Mix_Chunk	*baby_infected;
 	Mix_Chunk	*baby_held;
 	Mix_Chunk	*baby_rescued;
+	Mix_Chunk	*adult_armsfull;
 	Mix_Chunk	*adult_infected;
 	Mix_Chunk	*adult_captivated;
 	Mix_Chunk	*adult_mine;

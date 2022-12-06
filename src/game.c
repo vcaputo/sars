@@ -402,15 +402,20 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 }
 
 
-static void flash_entity(game_t *game, entity_any_t *any, unsigned count)
+/* returns 1 if entity started flashing, 0 if already flashing */
+static int flash_entity(game_t *game, entity_any_t *any, unsigned count)
 {
+	any->flashes_remaining = count;
+
 	if (!any->flashing) {
 		any->flashing = 1;
 		any->flashers_next = game->flashers_on_head;
 		game->flashers_on_head = any;
+
+		return 1;
 	}
 
-	any->flashes_remaining = count;
+	return 0;
 }
 
 
@@ -419,8 +424,9 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 
 	if (game->adult->holding) {
 		/* disallow picking up teepee if holding something, flash what's held and the teepee we missed */
-		flash_entity(game, &teepee->entity, 5);
-		flash_entity(game, &game->adult->holding->any, 5);
+		if (flash_entity(game, &teepee->entity, 5))
+			sfx_play(sfx.adult_armsfull);
+		(void) flash_entity(game, &game->adult->holding->any, 5);
 
 		return;
 	}
@@ -652,7 +658,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 			if (!--entity->adult.masked)
 				(void) adult_node_new(&(stage_conf_t){ .stage = search->game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &search->game->adult->entity.model_x);
 
-			flash_entity(search->game, &entity->any, 4);
+			(void) flash_entity(search->game, &entity->any, 4);
 
 			return IX2_SEARCH_STOP_MISS;
 		}
@@ -844,6 +850,7 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			if (!--game->adult->masked)
 				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
 			flash_entity(game, &game->adult->entity, 4);
+			(void) flash_entity(game, &game->adult->entity, 4);
 			reset_virus(&entity->virus);
 
 			return IX2_SEARCH_MORE_MISS;
