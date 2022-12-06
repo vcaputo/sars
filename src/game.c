@@ -387,6 +387,7 @@ static void infect_entity(game_t *game, entity_t *entity, const char *name)
 static void hat_baby(game_t *game, baby_t *baby, mask_t *mask)
 {
 	(void) baby_hatted_node_new(&(stage_conf_t){ .stage = baby->entity.node, .replace = 1, .name = "baby-hatted", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
+	sfx_play(sfx.baby_hatted);
 
 	stage_set_active(mask->entity.node, 0);
 }
