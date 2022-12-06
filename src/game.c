@@ -1166,6 +1166,7 @@ static void game_update(play_t *play, void *context)
 	/* winner game over states */
 	case GAME_STATE_OVER_WINNING:
 		show_score(game);
+		play_music_set(play, PLAY_MUSIC_FLAG_LOOP|PLAY_MUSIC_FLAG_IDEMPOTENT, "assets/winning.ogg");
 		play_ticks_reset(play, GAME_OVER_TIMER);
 		game->state = GAME_STATE_OVER_WINNING_DELAY;
 		break;
