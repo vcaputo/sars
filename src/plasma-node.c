@@ -26,18 +26,26 @@
 
 
 static const char	*plasma_vs = ""
+#ifdef __EMSCRIPTEN__
 	"#version 100\n"
+
+	"varying vec2 UV;"
+#else
+	"#version 120\n"
+#endif
 
 	"uniform mat4	projection_x;"
 
 	"attribute vec3 vertex;"
 	"attribute vec2 texcoord;"
 
-	"varying vec2 UV;"
-
 	"void main()"
 	"{"
+#ifdef __EMSCRIPTEN__
 	"	UV = texcoord;"
+#else
+	"	gl_TexCoord[0].xy = texcoord;"
+#endif
 	"	gl_Position = projection_x * vec4(vertex, 1.0);"
 	"}"
 "";
@@ -45,21 +53,31 @@ static const char	*plasma_vs = ""
 
 // derived from https://www.bidouille.org/prog/plasma
 static const char	*plasma_fs = ""
+#ifdef __EMSCRIPTEN__
 	"#version 100\n"
+#else
+	"#version 120\n"
+#endif
 
 	"#define PI 3.1415926535897932384626433832795\n"
 
+#ifdef __EMSCRIPTEN__
 	"precision mediump float;"
+	"varying vec2 UV;"
+#endif
+
 	"uniform float alpha;"
 	"uniform float time;"
-
-	"varying vec2 UV;"
 
 	"void main() {"
 	"	float v;"
 	"	float stime = sin(time * .01) * 100.0;"
 
+#ifdef __EMSCRIPTEN__
 	"	vec2 c = UV;"
+#else
+	"	vec2 c = gl_TexCoord[0].st;"
+#endif
 
 	// this zooms the texture coords in and out a bit with time
 	"	c *= (sin(stime * .01) *.5 + .5) * 3.0 + 1.0;"

@@ -51,7 +51,11 @@ static const float	texcoords[] = {
 
 
 static const char	*tex_vs = ""
+#ifdef __EMSCRIPTEN__
 	"#version 100\n"
+#else
+	"#version 120\n"
+#endif
 
 	"uniform mat4	model_x;"
 	"uniform mat4	projection_x;"
@@ -59,28 +63,42 @@ static const char	*tex_vs = ""
 	"attribute vec3	vertex;"
 	"attribute vec2	texcoord;"
 
+#ifdef __EMSCRIPTEN__
 	"varying vec2 UV;"
+#endif
 
 	"void main()"
 	"{"
+#ifdef __EMSCRIPTEN__
 	"	UV = texcoord;"
+#else
+	"	gl_TexCoord[0].xy = texcoord;"
+#endif
 	"	gl_Position = projection_x * model_x * vec4(vertex, 1.0);"
 	"}"
 "";
 
 
 static const char	*tex_fs = ""
+#ifdef __EMSCRIPTEN__
 	"#version 100\n"
 
 	"precision mediump float;"
+	"varying vec2		UV;"
+#else
+	"#version 120\n"
+#endif
+
 	"uniform sampler2D	tex0;"
 	"uniform float		alpha;"
 
-	"varying vec2		UV;"
-
 	"void main()"
 	"{"
+#ifdef __EMSCRIPTEN__
 	"	gl_FragColor = texture2D(tex0, UV);"
+#else
+	"	gl_FragColor = texture2D(tex0, gl_TexCoord[0].st);"
+#endif
 	"	gl_FragColor.a *= alpha;"
 	"}"
 "";
