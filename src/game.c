@@ -82,7 +82,7 @@
 #define GAME_MASK_SCALE		(v3f_t){ .04f, .04f, .04f }
 #define GAME_TEEPEE_SCALE	(v3f_t){ .07f, .07f, .07f }
 #define GAME_TEEPEE_ICON_SCALE	(v3f_t){ .06f, .06f, .06f }
-#define GAME_TV_SCALE		(v3f_t){ .15f, .15f, .15f }
+#define GAME_TV_SCALE		(v3f_t){ .16216f, .2f, .2f }
 #define GAME_VIRUS_SCALE	(v3f_t){ .05f, .05f, .05f }
 #define GAME_DIGITS_SCALE	(v3f_t){ .05f, .05f, .05f }
 
