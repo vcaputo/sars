@@ -301,7 +301,7 @@ static mask_t * mask_new(game_t *game, stage_t *parent)
 	fatal_if(!mask, "unable to allocate mask_t");
 
 	mask->entity.type = ENTITY_TYPE_MASK;
-	mask->entity.node = mask_node_new(&(stage_conf_t){ .parent = parent, .name = "mask", .layer = 4, .alpha = 1.f }, &game->sars->projection_x, &mask->entity.model_x);
+	mask->entity.node = mask_node_new(&(stage_conf_t){ .parent = parent, .name = "mask", .layer = 6, .alpha = 1.f }, &game->sars->projection_x, &mask->entity.model_x);
 	mask->entity.scale = GAME_MASK_SCALE;
 
 	return mask;
@@ -740,7 +740,7 @@ static void update_entities(play_t *play, game_t *game)
 		if (game->sars->cheat)
 			game->teepee->quantity = 128;
 
-		bonus_node_new(&(stage_conf_t){.parent = game->game_node, .active = 1, .alpha = 1.f, .name = "teepee-bonus", .layer = 6},
+		bonus_node_new(&(stage_conf_t){.parent = game->game_node, .active = 1, .alpha = 1.f, .name = "teepee-bonus", .layer = 7},
 			game->teepee->quantity,
 			&game->sars->projection_x,
 			&game->teepee->entity.position,
