@@ -1274,8 +1274,8 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 		if (event->key.keysym.sym == SDLK_ESCAPE)
 			exit(0);
 
-		if (game->state == GAME_STATE_OVER_WAITING ||
-		    game->state == GAME_STATE_OVER_WINNING_WAITING) {
+		if ((event->key.keysym.sym == SDLK_SPACE || event->key.keysym.sym == SDLK_RETURN) &&
+		    (game->state == GAME_STATE_OVER_WAITING || game->state == GAME_STATE_OVER_WINNING_WAITING)) {
 			reset_game(play, game);
 			break;
 		}
