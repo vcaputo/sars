@@ -882,6 +882,12 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 
 		game->adult->captivated = 1;
 		sfx_play(sfx.adult_captivated);
+		/* shifted because rand() tends to have more activity in the upper bits,
+		 * but this could be more careful about avoiding repetition by randomizing
+		 * a 0-9 list every time it stepped through said list. TODO
+		 */
+		sfx_play(sfx.tv_talk[(rand() >> 8) % NELEMS(sfx.tv_talk)]);
+
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MASK:

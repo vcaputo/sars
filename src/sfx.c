@@ -33,6 +33,16 @@ void sfx_init(void)
 	sfx.adult_maskhit = Mix_LoadWAV("assets/adult-maskhit.wav");
 	sfx.adult_mine = Mix_LoadWAV("assets/adult-mine.wav");
 	sfx.adult_unmasked = Mix_LoadWAV("assets/adult-unmasked.wav");
+	sfx.tv_talk[0] = Mix_LoadWAV("assets/talk/0.wav");
+	sfx.tv_talk[1] = Mix_LoadWAV("assets/talk/1.wav");
+	sfx.tv_talk[2] = Mix_LoadWAV("assets/talk/2.wav");
+	sfx.tv_talk[3] = Mix_LoadWAV("assets/talk/3.wav");
+	sfx.tv_talk[4] = Mix_LoadWAV("assets/talk/4.wav");
+	sfx.tv_talk[5] = Mix_LoadWAV("assets/talk/5.wav");
+	sfx.tv_talk[6] = Mix_LoadWAV("assets/talk/6.wav");
+	sfx.tv_talk[7] = Mix_LoadWAV("assets/talk/7.wav");
+	sfx.tv_talk[8] = Mix_LoadWAV("assets/talk/8.wav");
+	sfx.tv_talk[9] = Mix_LoadWAV("assets/talk/9.wav");
 }
 
 

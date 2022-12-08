@@ -30,6 +30,7 @@ typedef struct sfx_t {
 	Mix_Chunk	*adult_maskhit;
 	Mix_Chunk	*adult_mine;
 	Mix_Chunk	*adult_unmasked;
+	Mix_Chunk	*tv_talk[10];
 } sfx_t;
 
 extern sfx_t	sfx;
