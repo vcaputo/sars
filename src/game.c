@@ -1274,8 +1274,18 @@ static void game_dispatch(play_t *play, void *context, SDL_Event *event)
 		if (event->key.keysym.sym == SDLK_ESCAPE)
 			exit(0);
 
-		if ((event->key.keysym.sym == SDLK_SPACE || event->key.keysym.sym == SDLK_RETURN) &&
-		    (game->state == GAME_STATE_OVER_WAITING || game->state == GAME_STATE_OVER_WINNING_WAITING)) {
+		if ((game->state == GAME_STATE_OVER_WAITING ||
+		     game->state == GAME_STATE_OVER_WINNING_WAITING) &&
+		    (event->key.keysym.sym == SDLK_SPACE ||
+		     event->key.keysym.sym == SDLK_RETURN ||
+		     event->key.keysym.sym == SDLK_w ||
+		     event->key.keysym.sym == SDLK_a ||
+		     event->key.keysym.sym == SDLK_s ||
+		     event->key.keysym.sym == SDLK_d ||
+		     event->key.keysym.sym == SDLK_RIGHT ||
+		     event->key.keysym.sym == SDLK_LEFT ||
+		     event->key.keysym.sym == SDLK_DOWN ||
+		     event->key.keysym.sym == SDLK_UP)) {
 			reset_game(play, game);
 			break;
 		}
