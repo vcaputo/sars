@@ -1,5 +1,7 @@
 bin_PROGRAMS = sars
 sars_SOURCES = \
+	adult-maga-node.c \
+	adult-maga-node.h \
 	adult-masked-node.c \
 	adult-masked-node.h \
 	adult-node.c \
@@ -31,6 +33,8 @@ sars_SOURCES = \
 	m4f.h \
 	macros.h \
 	main.c \
+	maga-node.c \
+	maga-node.h \
 	mask-node.c \
 	mask-node.h \
 	plasma-node.c \
