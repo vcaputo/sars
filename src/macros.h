@@ -20,6 +20,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef SARS_DEBUG
+#define debugf(_fmt, ...) \
+	fprintf(stderr, "%s:%d: " _fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);
+#else
+#define debugf(_fmt, ...) \
+	do { } while (0);
+#endif
+
+#define debug_if(_cond, _fmt, ...) \
+	if (_cond) { \
+		debugf(_fmt, ##__VA_ARGS__); \
+	}
+
 #define fatal_if(_cond, _fmt, ...) \
 	if (_cond) { \
 		fprintf(stderr, "Fatal error: " _fmt "\n", ##__VA_ARGS__); \
