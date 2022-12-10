@@ -23,6 +23,7 @@
 #include <stage.h>
 
 #include "adult-node.h"
+#include "adult-maga-node.h"
 #include "adult-masked-node.h"
 #include "baby-hatted-node.h"
 #include "baby-node.h"
@@ -35,6 +36,7 @@
 #include "m4f-3dx.h"
 #include "m4f-bbx.h"
 #include "macros.h"
+#include "maga-node.h"
 #include "mask-node.h"
 #include "plasma-node.h"
 #include "sars.h"
@@ -50,6 +52,7 @@
 #define GAME_VIRUS_SPEED	.01f
 #define GAME_ADULT_SPEED	.05f
 #define GAME_ADULT_ACCEL	.25f
+#define GAME_MAGA_SPEED		.01f
 #define GAME_MASK_SPEED		.02f
 
 #define GAME_ENTITIES_DELAY_MS	20
@@ -80,6 +83,7 @@
 
 #define GAME_ADULT_SCALE	(v3f_t){ .07f, .07f, .07f }
 #define GAME_BABY_SCALE		(v3f_t){ .05f, .05f, .05f }
+#define GAME_MAGA_SCALE		(v3f_t){ .0435f, .05f, .05f }
 #define GAME_MASK_SCALE		(v3f_t){ .04299f, .03f, .03f }
 #define GAME_TEEPEE_SCALE	(v3f_t){ .07f, .07f, .07f }
 #define GAME_TEEPEE_ICON_SCALE	(v3f_t){ .06f, .06f, .06f }
@@ -88,6 +92,7 @@
 #define GAME_DIGITS_SCALE	(v3f_t){ .05f, .05f, .05f }
 
 #define GAME_TV_CHANCE		.05f
+#define GAME_MAGA_CHANCE	.75f	/* XXX: MAGA only attempted when captivated by tv */
 #define GAME_MASK_CHANCE	.02f
 #define GAME_TEEPEE_CHANCE	.55f
 
@@ -112,6 +117,7 @@ typedef enum entity_type_t {
 	ENTITY_TYPE_ADULT,
 	ENTITY_TYPE_VIRUS,
 	ENTITY_TYPE_TV,
+	ENTITY_TYPE_MAGA,
 	ENTITY_TYPE_MASK,
 	ENTITY_TYPE_TEEPEE,
 	ENTITY_TYPE_TEEPEE_ICON,
@@ -133,6 +139,10 @@ struct entity_any_t {
 	unsigned	flashes_remaining;
 };
 
+typedef struct maga_t {
+	entity_any_t	entity;
+} maga_t;
+
 typedef struct mask_t {
 	entity_any_t	entity;
 } mask_t;
@@ -153,6 +163,7 @@ typedef struct adult_t {
 	entity_any_t	entity;
 	unsigned	rescues;
 	unsigned	captivated:1;
+	unsigned	maga:1;
 	unsigned	masked;
 	entity_t	*holding;
 } adult_t;
@@ -177,6 +188,7 @@ union entity_t {
 	entity_any_t	any;
 	adult_t		adult;
 	baby_t		baby;
+	maga_t		maga;
 	mask_t		mask;
 	teepee_t	teepee;
 	tv_t		tv;
@@ -212,6 +224,7 @@ typedef struct game_t {
 
 	adult_t		*adult;
 	tv_t		*tv;
+	maga_t		*maga;
 	mask_t		*mask;
 	teepee_t	*teepee;
 	entity_t	*new_infections;
@@ -291,6 +304,21 @@ static baby_t * baby_new(game_t *game, stage_t *parent, baby_t *rescue)
 	entity_update_x(game, &baby->entity);
 
 	return baby;
+}
+
+
+static maga_t * maga_new(game_t *game, stage_t *parent)
+{
+	maga_t	*maga;
+
+	maga = pad_get(game->pad, sizeof(entity_t));
+	fatal_if(!maga, "unable to allocate maga_t");
+
+	maga->entity.type = ENTITY_TYPE_MAGA;
+	maga->entity.node = maga_node_new(&(stage_conf_t){ .parent = parent, .name = "maga", .layer = 6, .alpha = 1.f }, &game->sars->projection_x, &maga->entity.model_x);
+	maga->entity.scale = GAME_MAGA_SCALE;
+
+	return maga;
 }
 
 
@@ -394,8 +422,25 @@ static void hat_baby(game_t *game, baby_t *baby, mask_t *mask)
 }
 
 
+static void maga_adult(game_t *game, adult_t *adult, maga_t *maga)
+{
+	(void) adult_maga_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-maga", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
+
+	adult->maga = 1;
+	adult->masked = 0;
+	sfx_play(sfx.adult_maga);
+	stage_set_active(maga->entity.node, 0);
+}
+
+
 static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 {
+	if (adult->maga) { /* MAGA discards masks */
+		stage_set_active(mask->entity.node, 0);
+
+		return sfx_play(sfx.adult_maga);
+	}
+
 	(void) adult_masked_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
 
 	adult->masked += GAME_MASK_PROTECTION;
@@ -497,6 +542,7 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 		/* baby gets infected, return positive hit count */
 		return IX2_SEARCH_STOP_HIT;
 
+	case ENTITY_TYPE_MAGA:
 	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_TV:
 		return IX2_SEARCH_MORE_MISS;
@@ -527,6 +573,7 @@ static ix2_search_status_t teepee_search(void *cb_context, ix2_object_t *ix2_obj
 
 	case ENTITY_TYPE_TEEPEE: /* ignore self */
 	case ENTITY_TYPE_BABY:
+	case ENTITY_TYPE_MAGA:
 	case ENTITY_TYPE_MASK:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_VIRUS: /* TODO: virus contaminates teepee? */
@@ -587,7 +634,34 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 	case ENTITY_TYPE_VIRUS:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_TEEPEE:
+	case ENTITY_TYPE_MAGA:
 	case ENTITY_TYPE_MASK:
+		return IX2_SEARCH_MORE_MISS;
+
+	default:
+		assert(0);
+	}
+}
+
+
+static ix2_search_status_t maga_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
+{
+	game_t		*game = cb_context;
+	entity_t	*entity = object;
+
+	switch (entity->any.type) {
+	case ENTITY_TYPE_ADULT:
+		if (stage_get_active(game->maga->entity.node))
+			maga_adult(game, &entity->adult, game->maga);
+
+		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_BABY:
+	case ENTITY_TYPE_MASK: /* ignore self */
+	case ENTITY_TYPE_MAGA:
+	case ENTITY_TYPE_TEEPEE:
+	case ENTITY_TYPE_TV:
+	case ENTITY_TYPE_VIRUS:
 		return IX2_SEARCH_MORE_MISS;
 
 	default:
@@ -619,6 +693,7 @@ static ix2_search_status_t mask_search(void *cb_context, ix2_object_t *ix2_objec
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MASK: /* ignore self */
+	case ENTITY_TYPE_MAGA:
 	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_VIRUS: /* TODO: virus contaminates mask? */
@@ -675,6 +750,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MASK: /* TODO: virus contaminates mask? */
+	case ENTITY_TYPE_MAGA:
 	case ENTITY_TYPE_TEEPEE:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_VIRUS:
@@ -706,6 +782,14 @@ static void update_entities(play_t *play, game_t *game)
 		game->tv->entity.position.y = randf();
 		entity_update_x(game, &game->tv->entity);
 		stage_set_active(game->tv->entity.node, 1);
+	}
+
+	if (game->adult->captivated && randf() > (1.f - GAME_MAGA_CHANCE) && !stage_get_active(game->maga->entity.node)) {
+		/* sometimes activate a MAGA trap */
+		game->maga->entity.position.x = randf();
+		game->maga->entity.position.y = -1.2f;
+		entity_update_x(game, &game->maga->entity);
+		stage_set_active(game->maga->entity.node, 1);
 	}
 
 	if (randf() > (1.f - GAME_MASK_CHANCE) && !stage_get_active(game->mask->entity.node)) {
@@ -753,6 +837,18 @@ static void update_entities(play_t *play, game_t *game)
 		game->teepee->entity.position.y = -1.2f;
 		entity_update_x(game, &game->teepee->entity);
 		stage_set_active(game->teepee->entity.node, 1);
+	}
+
+	if (stage_get_active(game->maga->entity.node)) { /* if the maga is on, move it and possibly retire it */
+		game->maga->entity.position.y += GAME_MASK_SPEED;
+		entity_update_x(game, &game->maga->entity);
+
+		/* did it hit something? */
+		if (!ix2_search_by_aabb(game->ix2, NULL,  NULL, &game->maga->entity.aabb_x, maga_search, game)) {
+			/* No?, is it off-screen? */
+			if (game->maga->entity.position.y > 1.2f)
+				stage_set_active(game->maga->entity.node, 0);
+		}
 	}
 
 	if (stage_get_active(game->mask->entity.node)) { /* if the mask is on, move it and possibly retire it */
@@ -829,6 +925,7 @@ static void update_entities(play_t *play, game_t *game)
 }
 
 
+/* this search return value is a gross count of hits, not just with viruses */
 static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_object, v2f_t *ix2_object_position, bb2f_t *ix2_object_aabb, void *object)
 {
 	game_t		*game = cb_context;
@@ -890,6 +987,15 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		sfx_play(sfx.tv_talk[(rand() >> 8) % NELEMS(sfx.tv_talk)]);
 
 		return IX2_SEARCH_STOP_HIT;
+
+	case ENTITY_TYPE_MAGA:
+		if (!stage_get_active(entity->any.node))
+			return IX2_SEARCH_MORE_MISS;
+
+		/* maga the adult */
+		maga_adult(game, game->adult, &entity->maga);
+
+		return IX2_SEARCH_MORE_HIT;
 
 	case ENTITY_TYPE_MASK:
 		if (stage_get_active(entity->any.node))
@@ -985,6 +1091,7 @@ static void reset_game(play_t *play, game_t *game)
 	game->rescues_head = NULL;
 	game->tv = tv_new(game, game->game_node);
 	game->teepee = teepee_new(game, game->game_node);
+	game->maga = maga_new(game, game->game_node);
 	game->mask = mask_new(game, game->game_node);
 	game->adult = adult_new(game, game->game_node);
 	for (int i = 0; i < NELEMS(game->viruses); i++)
@@ -1118,6 +1225,10 @@ static void game_update(play_t *play, void *context)
 				distance = v2f_length(move);
 				if (distance) {
 					*move = v2f_normalize(move);
+
+					if (game->adult->maga) /* MAGA goes the opposite direction */
+						*move = v2f_invert(move);
+
 					*move = v2f_mult_scalar(move, velocity * (distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED));
 				}
 
