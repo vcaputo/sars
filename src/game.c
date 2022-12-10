@@ -71,7 +71,8 @@
 #define GAME_KBD_DELAY_MS	20
 #define GAME_KBD_TIMER		PLAY_TICKS_TIMER4
 
-#define GAME_OVER_DELAY_MS	1000
+#define GAME_OVER_DELAY_MS	500
+#define GAME_OVER_WIN_DELAY_MS	1000 /* longer for TP explosion animation */
 #define GAME_OVER_TIMER		PLAY_TICKS_TIMER2
 
 #define GAME_FLASHERS_DELAY_MS	75
@@ -1194,7 +1195,7 @@ static void game_update(play_t *play, void *context)
 		break;
 
 	case GAME_STATE_OVER_WINNING_DELAY: {
-		float		t = (float)(play_ticks(play, GAME_OVER_TIMER) * 1.f / (float)GAME_OVER_DELAY_MS);
+		float		t = (float)(play_ticks(play, GAME_OVER_TIMER) * 1.f / (float)GAME_OVER_WIN_DELAY_MS);
 		teepee_icon_t	*tp = game->teepee_head;
 
 		if (t > 1.f) {
