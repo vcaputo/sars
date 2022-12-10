@@ -96,7 +96,10 @@ static ansr_t * ansr_from_file(const char *path)
 	if (!f)
 		return NULL;
 
-	(void) ansr_get_sauce_dimensions(f, &conf.screen_width, NULL);
+	debug_if(ansr_get_sauce_dimensions(f, &conf.screen_width, NULL) < 0,
+		"No SAUCE metadata for \"%s\"", path);
+
+	debugf("\"%s\" %u wide", path, conf.screen_width);
 
 	a = ansr_new(&conf, NULL, 0);
 	if (!a) {
