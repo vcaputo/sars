@@ -54,6 +54,13 @@ static inline float v2f_dot(v2f_t *a, v2f_t *b)
 }
 
 
+static inline v2f_t v2f_invert(v2f_t *v)
+{
+	return (v2f_t){ .x = -v->x, .y = -v->y };
+
+}
+
+
 static inline float v2f_length(v2f_t *v)
 {
 	return sqrtf(v2f_dot(v, v));
