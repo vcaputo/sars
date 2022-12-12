@@ -403,7 +403,7 @@ static void infect_entity(game_t *game, entity_t *entity, const char *name)
 {
 	/* convert entity into inanimate virus (off the viruses array) */
 	(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = name, .active = 1, .alpha = 1.f }, &game->sars->projection_x, &entity->any.model_x);
-	sfx_play(sfx.baby_infected);
+	sfx_play(&sfx.baby_infected);
 	entity->any.type = ENTITY_TYPE_VIRUS;
 	entity->virus.corpse = 1;
 
@@ -416,7 +416,7 @@ static void infect_entity(game_t *game, entity_t *entity, const char *name)
 static void hat_baby(game_t *game, baby_t *baby, mask_t *mask)
 {
 	(void) baby_hatted_node_new(&(stage_conf_t){ .stage = baby->entity.node, .replace = 1, .name = "baby-hatted", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &baby->entity.model_x);
-	sfx_play(sfx.baby_hatted);
+	sfx_play(&sfx.baby_hatted);
 
 	stage_set_active(mask->entity.node, 0);
 }
@@ -428,7 +428,7 @@ static void maga_adult(game_t *game, adult_t *adult, maga_t *maga)
 
 	adult->maga = 1;
 	adult->masked = 0;
-	sfx_play(sfx.adult_maga);
+	sfx_play(&sfx.adult_maga);
 	stage_set_active(maga->entity.node, 0);
 }
 
@@ -438,13 +438,13 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 	if (adult->maga) { /* MAGA discards masks */
 		stage_set_active(mask->entity.node, 0);
 
-		return sfx_play(sfx.adult_maga);
+		return sfx_play(&sfx.adult_maga);
 	}
 
 	(void) adult_masked_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-masked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
 
 	adult->masked += GAME_MASK_PROTECTION;
-	sfx_play(sfx.adult_mine);
+	sfx_play(&sfx.adult_mine);
 	stage_set_active(mask->entity.node, 0);
 }
 
@@ -472,7 +472,7 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 	if (game->adult->holding) {
 		/* disallow picking up teepee if holding something, flash what's held and the teepee we missed */
 		if (flash_entity(game, &teepee->entity, 5))
-			sfx_play(sfx.adult_armsfull);
+			sfx_play(&sfx.adult_armsfull);
 		(void) flash_entity(game, &game->adult->holding->any, 5);
 
 		return;
@@ -507,7 +507,7 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 	}
 	(*teepee->bonus_release) = BONUS_NODE_RELEASE_MS;
 	(*teepee->bonus_release_position) = teepee->entity.position;
-	sfx_play(sfx.adult_mine);
+	sfx_play(&sfx.adult_mine);
 	stage_set_active(teepee->entity.node, 0);
 }
 
@@ -734,9 +734,9 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 
 			if (!--entity->adult.masked) {
 				(void) adult_node_new(&(stage_conf_t){ .stage = search->game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &search->game->adult->entity.model_x);
-				sfx_play(sfx.adult_unmasked);
+				sfx_play(&sfx.adult_unmasked);
 			} else
-				sfx_play(sfx.adult_maskhit);
+				sfx_play(&sfx.adult_maskhit);
 
 			(void) flash_entity(search->game, &entity->any, 4);
 
@@ -744,7 +744,7 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		}
 
 		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
-		sfx_play(sfx.adult_infected);
+		sfx_play(&sfx.adult_infected);
 		search->game->state = GAME_STATE_OVER;
 
 		return IX2_SEARCH_STOP_HIT;
@@ -934,7 +934,7 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
 		if (!game->adult->holding) {
-			sfx_play(sfx.baby_held);
+			sfx_play(&sfx.baby_held);
 			game->adult->holding = entity;
 		}
 
@@ -954,9 +954,9 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		if (game->adult->masked) {
 			if (!--game->adult->masked) {
 				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
-				sfx_play(sfx.adult_unmasked);
+				sfx_play(&sfx.adult_unmasked);
 			} else
-				sfx_play(sfx.adult_maskhit);
+				sfx_play(&sfx.adult_maskhit);
 			(void) flash_entity(game, &game->adult->entity, 4);
 			reset_virus(&entity->virus);
 
@@ -965,11 +965,11 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 
 		/* convert adult into inanimate virus (off the viruses array) */
 		(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
-		sfx_play(sfx.adult_infected);
+		sfx_play(&sfx.adult_infected);
 
 		if (game->adult->holding) {
 			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->holding->any.model_x);
-			sfx_play(sfx.baby_infected);
+			sfx_play(&sfx.baby_infected);
 		}
 		game->state = GAME_STATE_OVER;
 		return IX2_SEARCH_STOP_HIT;
@@ -979,12 +979,12 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			return IX2_SEARCH_MORE_MISS;
 
 		game->adult->captivated = 1;
-		sfx_play(sfx.adult_captivated);
+		sfx_play(&sfx.adult_captivated);
 		/* shifted because rand() tends to have more activity in the upper bits,
 		 * but this could be more careful about avoiding repetition by randomizing
 		 * a 0-9 list every time it stepped through said list. TODO
 		 */
-		sfx_play(sfx.tv_talk[(rand() >> 8) % NELEMS(sfx.tv_talk)]);
+		sfx_play(&sfx.tv_talk[(rand() >> 8) % NELEMS(sfx.tv_talk)]);
 
 		return IX2_SEARCH_STOP_HIT;
 
@@ -1051,7 +1051,7 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 		    game->adult->entity.position.y < -1.05f) {
 
 			/* rescued baby */
-			sfx_play(sfx.baby_rescued);
+			sfx_play(&sfx.baby_rescued);
 
 			/* make the rescued baby available for respawn reuse */
 			game->adult->holding->any.flashes_remaining = 0;

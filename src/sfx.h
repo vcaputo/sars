@@ -19,24 +19,35 @@
 
 #include <SDL_mixer.h>
 
+typedef enum sfx_voice_t {
+	SFX_VOICE_ADULT,
+	SFX_VOICE_TV,
+	SFX_VOICE_BABY,
+} sfx_voice_t;
+
+typedef struct sfx_sound_t {
+	sfx_voice_t	voice;
+	Mix_Chunk	*chunk;
+} sfx_sound_t;
+
 typedef struct sfx_t {
-	Mix_Chunk	*baby_infected;
-	Mix_Chunk	*baby_hatted;
-	Mix_Chunk	*baby_held;
-	Mix_Chunk	*baby_rescued;
-	Mix_Chunk	*adult_armsfull;
-	Mix_Chunk	*adult_infected;
-	Mix_Chunk	*adult_captivated;
-	Mix_Chunk	*adult_maga;
-	Mix_Chunk	*adult_maskhit;
-	Mix_Chunk	*adult_mine;
-	Mix_Chunk	*adult_unmasked;
-	Mix_Chunk	*tv_talk[10];
+	sfx_sound_t	baby_infected;
+	sfx_sound_t	baby_hatted;
+	sfx_sound_t	baby_held;
+	sfx_sound_t	baby_rescued;
+	sfx_sound_t	adult_armsfull;
+	sfx_sound_t	adult_infected;
+	sfx_sound_t	adult_captivated;
+	sfx_sound_t	adult_maga;
+	sfx_sound_t	adult_maskhit;
+	sfx_sound_t	adult_mine;
+	sfx_sound_t	adult_unmasked;
+	sfx_sound_t	tv_talk[10];
 } sfx_t;
 
 extern sfx_t	sfx;
 
 void sfx_init(void);
-void sfx_play(Mix_Chunk *chunk);
+void sfx_play(sfx_sound_t *sound);
 
 #endif

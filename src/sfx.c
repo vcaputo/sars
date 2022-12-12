@@ -14,6 +14,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <SDL_mixer.h>
 
 #include "sfx.h"
@@ -21,34 +22,58 @@
 sfx_t	sfx;
 
 
-void sfx_init(void)
+static void sfx_load(sfx_voice_t voice, const char *path, sfx_sound_t *res_sound)
 {
-	sfx.baby_infected = Mix_LoadWAV("assets/baby-infected.wav");
-	sfx.baby_hatted = Mix_LoadWAV("assets/baby-hatted.wav");
-	sfx.baby_held = Mix_LoadWAV("assets/baby-held.wav");
-	sfx.baby_rescued = Mix_LoadWAV("assets/baby-rescued.wav");
-	sfx.adult_armsfull = Mix_LoadWAV("assets/adult-armsfull.wav");
-	sfx.adult_infected = Mix_LoadWAV("assets/adult-infected.wav");
-	sfx.adult_captivated = Mix_LoadWAV("assets/adult-captivated.wav");
-	sfx.adult_maga = Mix_LoadWAV("assets/adult-maga.wav");
-	sfx.adult_maskhit = Mix_LoadWAV("assets/adult-maskhit.wav");
-	sfx.adult_mine = Mix_LoadWAV("assets/adult-mine.wav");
-	sfx.adult_unmasked = Mix_LoadWAV("assets/adult-unmasked.wav");
-	sfx.tv_talk[0] = Mix_LoadWAV("assets/talk/0.wav");
-	sfx.tv_talk[1] = Mix_LoadWAV("assets/talk/1.wav");
-	sfx.tv_talk[2] = Mix_LoadWAV("assets/talk/2.wav");
-	sfx.tv_talk[3] = Mix_LoadWAV("assets/talk/3.wav");
-	sfx.tv_talk[4] = Mix_LoadWAV("assets/talk/4.wav");
-	sfx.tv_talk[5] = Mix_LoadWAV("assets/talk/5.wav");
-	sfx.tv_talk[6] = Mix_LoadWAV("assets/talk/6.wav");
-	sfx.tv_talk[7] = Mix_LoadWAV("assets/talk/7.wav");
-	sfx.tv_talk[8] = Mix_LoadWAV("assets/talk/8.wav");
-	sfx.tv_talk[9] = Mix_LoadWAV("assets/talk/9.wav");
+	assert(path);
+	assert(res_sound);
+
+	(*res_sound).voice = voice;
+	(*res_sound).chunk = Mix_LoadWAV(path);
 }
 
 
-void sfx_play(Mix_Chunk *chunk)
+void sfx_init(void)
 {
-	if (chunk)
-		Mix_PlayChannel(-1, chunk, 0);
+	sfx_load(SFX_VOICE_BABY, "assets/baby-infected.wav", &sfx.baby_infected);
+	sfx_load(SFX_VOICE_BABY, "assets/baby-hatted.wav", &sfx.baby_hatted);
+	sfx_load(SFX_VOICE_BABY, "assets/baby-held.wav", &sfx.baby_held);
+	sfx_load(SFX_VOICE_BABY, "assets/baby-rescued.wav", &sfx.baby_rescued);
+	Mix_GroupChannels(0, 4, SFX_VOICE_BABY);
+
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-armsfull.wav", &sfx.adult_armsfull);
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-infected.wav", &sfx.adult_infected);
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-captivated.wav", &sfx.adult_captivated);
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-maga.wav", &sfx.adult_maga);
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-maskhit.wav", &sfx.adult_maskhit);
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-mine.wav", &sfx.adult_mine);
+	sfx_load(SFX_VOICE_ADULT, "assets/adult-unmasked.wav", &sfx.adult_unmasked);
+	Mix_GroupChannel(4, SFX_VOICE_ADULT);
+
+	sfx_load(SFX_VOICE_TV, "assets/talk/0.wav", &sfx.tv_talk[0]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/1.wav", &sfx.tv_talk[1]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/2.wav", &sfx.tv_talk[2]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/3.wav", &sfx.tv_talk[3]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/4.wav", &sfx.tv_talk[4]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/5.wav", &sfx.tv_talk[5]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/6.wav", &sfx.tv_talk[6]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/7.wav", &sfx.tv_talk[7]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/8.wav", &sfx.tv_talk[8]);
+	sfx_load(SFX_VOICE_TV, "assets/talk/9.wav", &sfx.tv_talk[9]);
+	Mix_GroupChannel(5, SFX_VOICE_TV);
+}
+
+
+void sfx_play(sfx_sound_t *sound)
+{
+	assert(sound);
+
+	if (sound->chunk) {
+		int	channel;
+
+		channel = Mix_GroupAvailable(sound->voice);
+		if (channel < 0)
+			channel = Mix_GroupOldest(sound->voice);
+
+		Mix_PlayChannel(channel, sound->chunk, 0);
+	}
 }
