@@ -21,6 +21,6 @@ typedef struct m4f_t m4f_t;
 typedef struct stage_t stage_t;
 typedef struct stage_conf_t stage_conf_t;
 
-stage_t * plasma_node_new(const stage_conf_t *conf, m4f_t *projection_x, float *gloom);
+stage_t * plasma_node_new(const stage_conf_t *conf, m4f_t *projection_x, float *gloom, int *maga);
 
 #endif

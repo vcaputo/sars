@@ -1148,7 +1148,7 @@ static void * game_init(play_t *play, int argc, char *argv[], unsigned flags)
 
 	game->sars = sars;
 	game->stage = sars->stage;
-	game->plasma_node = plasma_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "plasma", .alpha = 1 }, &sars->projection_x, &game->infections_rate_smoothed);
+	game->plasma_node = plasma_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "plasma", .alpha = 1 }, &sars->projection_x, &game->infections_rate_smoothed, &game->is_maga);
 
 	game->ix2 = ix2_new(NULL, 4, 4, 2 /* support two simultaneous searches: tv_search->baby_search */);
 
