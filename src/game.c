@@ -163,7 +163,6 @@ typedef struct adult_t {
 	entity_any_t	entity;
 	unsigned	rescues;
 	unsigned	captivated:1;
-	unsigned	maga:1;
 	unsigned	masked;
 	entity_t	*holding;
 } adult_t;
@@ -228,6 +227,7 @@ typedef struct game_t {
 	mask_t		*mask;
 	teepee_t	*teepee;
 	entity_t	*new_infections;
+	int		is_maga;
 	float		infections_rate, infections_rate_smoothed; /* 0-1 for none-max */
 	virus_t		*viruses[GAME_NUM_VIRUSES];
 	m4f_t		score_digits_x[10];
@@ -427,8 +427,15 @@ static void maga_adult(game_t *game, adult_t *adult, maga_t *maga)
 {
 	(void) adult_maga_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-maga", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
 
-	adult->maga = 1;
 	adult->masked = 0;
+	/* XXX: this is kind of kludge-y: originally the maga flag was part of adult_t where it arguably belongs, but
+	 * since the adult entity comes and goes that prevents taking a persistent reference to the maga flag for plasma_node()
+	 * to toggle maga mode from.
+	 * By moving the flag out into the global game state the problem disappears, and that's good enough for a toy like SARS.
+	 * This also means game->is_maga must be explicitly cleared on game reset, wherease previously adult_new() using zeroed
+	 * memory ensured maga was always off initially.
+	 */
+	game->is_maga = 1;
 	sfx_play(&sfx.adult_maga);
 	stage_set_active(maga->entity.node, 0);
 }
@@ -436,7 +443,7 @@ static void maga_adult(game_t *game, adult_t *adult, maga_t *maga)
 
 static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 {
-	if (adult->maga) { /* MAGA discards masks */
+	if (game->is_maga) { /* MAGA discards masks */
 		stage_set_active(mask->entity.node, 0);
 
 		return sfx_play(&sfx.adult_maga);
@@ -1092,6 +1099,7 @@ static void reset_game(play_t *play, game_t *game)
 	game->teepee_head = NULL;
 	game->flashers_on_head = game->flashers_off_head = NULL;
 	game->rescues_head = NULL;
+	game->is_maga = 0;
 	game->tv = tv_new(game, game->game_node);
 	game->teepee = teepee_new(game, game->game_node);
 	game->maga = maga_new(game, game->game_node);
@@ -1229,7 +1237,7 @@ static void game_update(play_t *play, void *context)
 				if (distance) {
 					*move = v2f_normalize(move);
 
-					if (game->adult->maga) /* MAGA goes the opposite direction */
+					if (game->is_maga) /* MAGA goes the opposite direction */
 						*move = v2f_invert(move);
 
 					*move = v2f_mult_scalar(move, velocity * (distance < GAME_ADULT_SPEED ? distance : GAME_ADULT_SPEED));
