@@ -68,6 +68,7 @@ static const char	*plasma_fs = ""
 
 	"uniform float alpha;"
 	"uniform float time;"
+	"uniform float gloom;"
 
 	"void main() {"
 	"	float v;"
@@ -92,29 +93,32 @@ static const char	*plasma_fs = ""
 	"	v += sin(sqrt(c.x * c.x + c.y * c.y + 1.0) + stime);"
 
 	"	vec3 col = vec3(cos(PI * v + sin(time)), sin(PI * v + cos(time * .33)), cos(PI * v + sin(time * .66)));"
-	"	gl_FragColor = vec4(col * .5 + .5, alpha);"
+	"	gl_FragColor = vec4((col * .5 + .5) * (1.f - gloom), alpha);"
 	"}"
 "";
 
 
 static void plasma_uniforms(void *uniforms_ctxt, void *render_ctxt, unsigned n_uniforms, const int *uniforms, const m4f_t *model_x, float alpha)
 {
+	float	*gloom = uniforms_ctxt;
 	play_t	*play = render_ctxt;
 
 	glUniform1f(uniforms[0], alpha);
 	glUniform1f(uniforms[1], play_ticks(play, PLAY_TICKS_TIMER0) * .001f); // FIXME KLUDGE ALERT
 	glUniformMatrix4fv(uniforms[2], 1, GL_FALSE, &model_x->m[0][0]);
+	glUniform1f(uniforms[3], *gloom);
 }
 
 
 /* create plasma rendering stage */
-stage_t * plasma_node_new(const stage_conf_t *conf, m4f_t *projection_x)
+stage_t * plasma_node_new(const stage_conf_t *conf, m4f_t *projection_x, float *gloom)
 {
-	return	shader_node_new_src(conf, plasma_vs, plasma_fs, projection_x, plasma_uniforms, NULL, 3,
+	return	shader_node_new_src(conf, plasma_vs, plasma_fs, projection_x, plasma_uniforms, gloom, 4,
 			(const char *[]){
 				"alpha",
 				"time",
 				"projection_x",
+				"gloom",
 			}
 		);
 }
