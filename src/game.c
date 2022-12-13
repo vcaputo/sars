@@ -1343,6 +1343,11 @@ static void game_update(play_t *play, void *context)
 			tp->entity.model_x = m4f_scale(&tp->entity.model_x, &tp->entity.scale);
 			tp->entity.model_x = m4f_rotate(&tp->entity.model_x, &(v3f_t){ .x = 0.f, .y = 0.f, .z = 1.f }, r);
 		}
+
+		/* "dance" the adult too */
+		game->adult->entity.model_x = m4f_translate(NULL, &(v3f_t){ game->adult->entity.position.x, game->adult->entity.position.y, 0.f });
+		game->adult->entity.model_x = m4f_scale(&game->adult->entity.model_x, &game->adult->entity.scale);
+		game->adult->entity.model_x = m4f_rotate(&game->adult->entity.model_x, &(v3f_t){.y = -1.f}, r < 0 ? 0.f : M_PI);
 		break;
 	}
 
