@@ -228,6 +228,7 @@ typedef struct game_t {
 	mask_t		*mask;
 	teepee_t	*teepee;
 	entity_t	*new_infections;
+	float		infections_rate, infections_rate_smoothed; /* 0-1 for none-max */
 	virus_t		*viruses[GAME_NUM_VIRUSES];
 	m4f_t		score_digits_x[10];
 } game_t;
@@ -774,6 +775,8 @@ static void update_entities(play_t *play, game_t *game)
 	assert(play);
 	assert(game);
 
+	game->infections_rate_smoothed = (game->infections_rate + game->infections_rate_smoothed * 10.f) * (1.f / 11.f);
+
 	if (randf() > (1.f - GAME_TV_CHANCE) && !stage_get_active(game->tv->entity.node)) {
 		/* sometimes turn on the TV at a random location, we
 		 * get stuck to it */
@@ -1278,11 +1281,15 @@ static void game_update(play_t *play, void *context)
 		}
 
 		if (play_ticks_elapsed(play, GAME_NEWBABIES_TIMER, GAME_NEWBABIES_DELAY_MS)) {
+			unsigned	n_infections = 0;
+
 			for (unsigned n = GAME_NUM_BABIES - game->babies_cnt; n > 0; n--) {
 				baby_search_t	search = { .game = game, .baby = game->rescues_head };
 
 				if (search.baby)
 					game->rescues_head = search.baby->rescues_next;
+				else
+					n_infections++;
 
 				search.baby = baby_new(game, game->babies_node, search.baby);
 
@@ -1292,6 +1299,8 @@ static void game_update(play_t *play, void *context)
 				else
 					game->babies_cnt++;
 			}
+
+			game->infections_rate = (1.f / GAME_NUM_BABIES) * (float)n_infections;
 		}
 
 		break;
