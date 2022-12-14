@@ -44,6 +44,7 @@ typedef struct sars_t {
 	unsigned	window_width, window_height;
 	sars_winmode_t	winmode;
 	unsigned	cheat:1;
+	unsigned	delay_seconds;
 
 	m4f_t		projection_x;
 	m4f_t		projection_x_inv;

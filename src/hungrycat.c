@@ -36,6 +36,7 @@
 #define HUNGRYCAT_FADE_TIMER	PLAY_TICKS_TIMER0
 
 typedef enum hungrycat_state_t {
+	HUNGRYCAT_STATE_DELAY,
 	HUNGRYCAT_STATE_FADEIN,
 	HUNGRYCAT_STATE_SHOW,
 	HUNGRYCAT_STATE_FADEOUT,
@@ -73,7 +74,6 @@ static void hungrycat_enter(play_t *play, void *context)
 
 	assert(hungrycat);
 
-	play_music_set(play, 0, "assets/hungrycat.ogg");
 	play_ticks_reset(play, HUNGRYCAT_FADE_TIMER);
 }
 
@@ -86,11 +86,21 @@ static float fade_t(play_t *play)
 
 static void hungrycat_update(play_t *play, void *context)
 {
+	sars_t		*sars = play_context(play, SARS_CONTEXT_SARS);
 	hungrycat_t	*hungrycat = context;
 
 	assert(hungrycat);
 
 	switch (hungrycat->state) {
+	case HUNGRYCAT_STATE_DELAY:
+		stage_dirty(hungrycat->node);
+		if (!play_ticks_elapsed(play, HUNGRYCAT_FADE_TIMER, sars->delay_seconds * 1000))
+			break;
+
+		play_music_set(play, 0, "assets/hungrycat.ogg");
+		hungrycat->state = HUNGRYCAT_STATE_FADEIN;
+		break;
+
 	case HUNGRYCAT_STATE_FADEIN:
 		stage_dirty(hungrycat->node);
 		if (!play_ticks_elapsed(play, HUNGRYCAT_FADE_TIMER, HUNGRYCAT_FADE_MS)) {

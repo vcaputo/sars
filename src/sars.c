@@ -38,6 +38,8 @@
 #define SARS_DEFAULT_WINMODE	SARS_WINMODE_WINDOW
 #endif
 
+#define SARS_DEFAULT_DELAY_SECS	10
+
 #define SARS_WINDOW_FLAGS	(SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI)
 
 
@@ -254,6 +256,14 @@ static int sars_parse_argv(sars_t *sars, int argc, char *argv[])
 			}
 		} else if (!strcmp(flag, "--cheat")) {
 			sars->cheat = 1;
+		} else if (!strcmp(flag, "--delay")) {
+			sars->delay_seconds = SARS_DEFAULT_DELAY_SECS;
+
+			if (i + 1 < argc && argv[i + 1][0] != '-' && argv[i + 1][1] != '-') {
+				/* --wait SECONDS is optionally supported */
+				sscanf(argv[i + 1], "%u", &sars->delay_seconds); /* FIXME: parse errors */
+				i++;
+			}
 		} else {
 			warn_if(1, "Unsupported flag \"%s\", ignoring", argv[i]);
 		} /* TODO: add --fullscreen? */
