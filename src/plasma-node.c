@@ -76,6 +76,25 @@ static const char	*plasma_fs = ""
 	"uniform float gloom;"
 	"uniform int maga;"
 
+"	float dostar(vec2 uv, float size) {"
+"		uv.x = abs(uv.x);"
+"		float a = 6.2832/5.;"
+"		float d1 = dot(uv, vec2(sin(a), cos(a)));"
+"		a = 3. * 6.2832/5.;"
+"		float d2 = dot(uv, vec2(sin(a), cos(a)));"
+"		a = 2. * 6.2832/5.;"
+"		float d4 = dot(uv, vec2(sin(a), cos(a)));"
+"		float d = min(max(d1, d2), max(uv.y, d4));"
+#ifdef __EMSCRIPTEN__
+		/* GLSL 1.0 lacks fwidth() */
+"		float w = .001;"
+#else
+"		float w = fwidth(d);"
+#endif
+
+"		return smoothstep(w, -w, d - size);"
+"	}"
+
 	"void main() {"
 	"	float v;"
 	"	float stime = sin(time * .01) * 100.0;"
@@ -85,6 +104,7 @@ static const char	*plasma_fs = ""
 #else
 	"	vec2 c = gl_TexCoord[0].st;"
 #endif
+	"	vec2 cc = c;"
 
 	// this zooms the texture coords in and out a bit with time
 	"	c *= (sin(stime * .01) *.5 + .5) * 3.0 + 1.0;"
@@ -100,12 +120,14 @@ static const char	*plasma_fs = ""
 
 	"	if (maga == 1) {"
 	"		float	r, g, b;"
-
-	"		r = smoothstep(.25, .8, cos(PI * v + sin(time)));"
-	"		g = smoothstep(.25, .8, cos(1.333 * PI + PI * v + sin(time)));"
+	"		float	star = dostar(mod(cc, .2) - .1, (sin(time + c.x + c.y) * .5 + .5) * .01 + .01);"
 	"		b = smoothstep(.25, .8, cos(2.666 * PI + PI * v + sin(time)));"
+	"		star *= b;"
+	"		b = max(star, b);"
+	"		r = max(smoothstep(.25, .8, cos(PI * v + sin(time))), star);"
+	"		g = max(smoothstep(.25, .8, cos(1.333 * PI + PI * v + sin(time))), star);"
 
-		"	gl_FragColor = vec4(r + g, g, b + g, 1.);"
+		"	gl_FragColor = vec4(max(r, g), g, max(b, g), 1.);"
 	"	} else {"
 	"		vec3	col = vec3(cos(PI * v + sin(time)), sin(PI * v + cos(time * .33)), cos(PI * v + sin(time * .66)));"
 		"	gl_FragColor = vec4((col * .5 + .5), 1.);"
