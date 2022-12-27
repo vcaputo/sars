@@ -531,6 +531,9 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 	baby_search_t	*search = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
 		return IX2_SEARCH_MORE_MISS;
@@ -540,9 +543,6 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_VIRUS:
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
-
 		/* only non-corpse viruses should be reset by baby contact */
 		if (!entity->virus.corpse)
 			reset_virus(&entity->virus);
@@ -556,8 +556,7 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_MASK:
-		if (stage_get_active(entity->any.node))
-			hat_baby(search->game, search->baby, &entity->mask);
+		hat_baby(search->game, search->baby, &entity->mask);
 
 		return IX2_SEARCH_MORE_MISS;
 
@@ -572,10 +571,12 @@ static ix2_search_status_t teepee_search(void *cb_context, ix2_object_t *ix2_obj
 	game_t		*game = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_ADULT:
-		if (stage_get_active(game->teepee->entity.node))
-			more_teepee(game, game->teepee);
+		more_teepee(game, game->teepee);
 
 		return IX2_SEARCH_STOP_HIT;
 
@@ -598,15 +599,14 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 	game_t		*game = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY: {
 		baby_search_t	search = { .game = game, .baby = &entity->baby };
 		v2f_t		delta;
 		float		len;
-
-		/* skip inactive babies, since rescues can linger inactive til respawned */
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
 
 		/* skip held baby */
 		if (game->adult->holding == entity)
@@ -635,10 +635,7 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 		return IX2_SEARCH_MORE_HIT;
 	}
 
-	case ENTITY_TYPE_ADULT:
-		/* XXX: should the tv affect the adult from a distance? */
-		return IX2_SEARCH_MORE_MISS;
-
+	case ENTITY_TYPE_ADULT: /* XXX: should the tv affect the adult from a distance? */
 	case ENTITY_TYPE_VIRUS:
 	case ENTITY_TYPE_TV:
 	case ENTITY_TYPE_TEEPEE:
@@ -657,10 +654,12 @@ static ix2_search_status_t maga_search(void *cb_context, ix2_object_t *ix2_objec
 	game_t		*game = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_ADULT:
-		if (stage_get_active(game->maga->entity.node))
-			maga_adult(game, &entity->adult, game->maga);
+		maga_adult(game, &entity->adult, game->maga);
 
 		return IX2_SEARCH_STOP_HIT;
 
@@ -683,12 +682,11 @@ static ix2_search_status_t mask_search(void *cb_context, ix2_object_t *ix2_objec
 	game_t		*game = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
-		/* skip inactive babies, since rescues can linger inactive til respawned */
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
-
 		if (stage_get_active(game->mask->entity.node))
 			hat_baby(game, &entity->baby, game->mask);
 
@@ -723,12 +721,11 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 	virus_search_t	*search = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
-		/* skip inactive babies, since rescues can linger inactive til respawned */
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
-
 		/* virus hit a baby; infect it and spawn a replacement */
 		infect_entity(search->game, entity, "baby-virus");
 		search->game->babies_cnt--;
@@ -891,7 +888,7 @@ static void update_entities(play_t *play, game_t *game)
 	if (stage_get_active(game->tv->entity.node)) { /* if the TV is on, move nearby babies towards it */
 		bb2f_t	range_aabb = { .min = { -GAME_TV_RANGE_MAX, -GAME_TV_RANGE_MAX }, .max = { GAME_TV_RANGE_MAX, GAME_TV_RANGE_MAX } };
 
-		ix2_search_by_aabb(game->ix2, &game->tv->entity.position, NULL, &range_aabb, tv_search, game);
+		(void) ix2_search_by_aabb(game->ix2, &game->tv->entity.position, NULL, &range_aabb, tv_search, game);
 	}
 
 	for (int i = 0; i < NELEMS(game->viruses); i++) {
@@ -941,6 +938,9 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 	game_t		*game = cb_context;
 	entity_t	*entity = object;
 
+	if (!stage_get_active(entity->any.node))
+		return IX2_SEARCH_MORE_MISS;
+
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
 		if (!game->adult->holding) {
@@ -958,9 +958,6 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_VIRUS:
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
-
 		if (game->adult->masked) {
 			if (!--game->adult->masked) {
 				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
@@ -982,12 +979,10 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 			sfx_play(&sfx.baby_infected);
 		}
 		game->state = GAME_STATE_OVER;
+
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_TV:
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
-
 		game->adult->captivated = 1;
 		sfx_play(&sfx.adult_captivated);
 		/* shifted because rand() tends to have more activity in the upper bits,
@@ -999,23 +994,18 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		return IX2_SEARCH_STOP_HIT;
 
 	case ENTITY_TYPE_MAGA:
-		if (!stage_get_active(entity->any.node))
-			return IX2_SEARCH_MORE_MISS;
-
 		/* maga the adult */
 		maga_adult(game, game->adult, &entity->maga);
 
 		return IX2_SEARCH_MORE_HIT;
 
 	case ENTITY_TYPE_MASK:
-		if (stage_get_active(entity->any.node))
-			mask_adult(game, game->adult, &entity->mask);
+		mask_adult(game, game->adult, &entity->mask);
 
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_TEEPEE:
-		if (stage_get_active(entity->any.node))
-			more_teepee(game, &entity->teepee);
+		more_teepee(game, &entity->teepee);
 
 		return IX2_SEARCH_MORE_HIT;
 
@@ -1076,7 +1066,7 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 	}
 
 	/* search ix2 for collisions */
-	ix2_search_by_aabb(game->ix2, NULL, NULL, &game->adult->entity.aabb_x, adult_search, game);
+	(void) ix2_search_by_aabb(game->ix2, NULL, NULL, &game->adult->entity.aabb_x, adult_search, game);
 }
 
 
