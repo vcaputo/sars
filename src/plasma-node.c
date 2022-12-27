@@ -127,10 +127,10 @@ static const char	*plasma_fs = ""
 	"		r = max(smoothstep(.25, .8, cos(PI * v + sin(time))), star);"
 	"		g = max(smoothstep(.25, .8, cos(1.333 * PI + PI * v + sin(time))), star);"
 
-		"	gl_FragColor = vec4(max(r, g), g, max(b, g), 1.);"
+	"		gl_FragColor = vec4(max(r, g), g, max(b, g), 1.);"
 	"	} else {"
 	"		vec3	col = vec3(cos(PI * v + sin(time)), sin(PI * v + cos(time * .33)), cos(PI * v + sin(time * .66)));"
-		"	gl_FragColor = vec4((col * .5 + .5), 1.);"
+	"		gl_FragColor = vec4((col * .5 + .5) * (1. - gloom), alpha);"
 	"	}"
 	"}"
 "";
