@@ -164,7 +164,7 @@ typedef struct adult_t {
 	unsigned	rescues;
 	unsigned	captivated:1;
 	unsigned	masked;
-	entity_t	*holding;
+	baby_t		*holding;
 } adult_t;
 
 typedef struct teepee_t {
@@ -457,6 +457,18 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 }
 
 
+static void pickup_baby(game_t *game, adult_t *adult, baby_t *baby)
+{
+	if (adult->holding)
+		return;
+
+	sfx_play(&sfx.baby_held);
+	adult->holding = baby;
+	adult->holding->entity.position = adult->entity.position;
+	entity_update_x(game, &adult->holding->entity);
+}
+
+
 /* returns 1 if entity started flashing, 0 if already flashing */
 static int flash_entity(game_t *game, entity_any_t *any, unsigned count)
 {
@@ -481,7 +493,7 @@ static void more_teepee(game_t *game, teepee_t *teepee)
 		/* disallow picking up teepee if holding something, flash what's held and the teepee we missed */
 		if (flash_entity(game, &teepee->entity, 5))
 			sfx_play(&sfx.adult_armsfull);
-		(void) flash_entity(game, &game->adult->holding->any, 5);
+		(void) flash_entity(game, &game->adult->holding->entity, 5);
 
 		return;
 	}
@@ -539,7 +551,8 @@ static ix2_search_status_t baby_search(void *cb_context, ix2_object_t *ix2_objec
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_ADULT:
-		/* TODO: adult picks us up? */
+		pickup_baby(search->game, &entity->adult, search->baby);
+
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_VIRUS:
@@ -609,7 +622,7 @@ static ix2_search_status_t tv_search(void *cb_context, ix2_object_t *ix2_object,
 		float		len;
 
 		/* skip held baby */
-		if (game->adult->holding == entity)
+		if (game->adult->holding == &entity->baby)
 			return IX2_SEARCH_MORE_MISS;
 
 		/* if baby's distance from tv is within a range, inch it towards TV */
@@ -943,10 +956,7 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 
 	switch (entity->any.type) {
 	case ENTITY_TYPE_BABY:
-		if (!game->adult->holding) {
-			sfx_play(&sfx.baby_held);
-			game->adult->holding = entity;
-		}
+		pickup_baby(game, game->adult, &entity->baby);
 
 		/* we should probably keep looking because there could be a virus too,
 		 * but fuck it, these types of bugs are fun in silly games.
@@ -975,7 +985,7 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		sfx_play(&sfx.adult_infected);
 
 		if (game->adult->holding) {
-			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->any.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->holding->any.model_x);
+			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->entity.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->holding->entity.model_x);
 			sfx_play(&sfx.baby_infected);
 		}
 		game->state = GAME_STATE_OVER;
@@ -1042,8 +1052,8 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 	entity_update_x(game, &game->adult->entity);
 
 	if (game->adult->holding) {
-		game->adult->holding->any.position = game->adult->entity.position;
-		entity_update_x(game, &game->adult->holding->any);
+		game->adult->holding->entity.position = game->adult->entity.position;
+		entity_update_x(game, &game->adult->holding->entity);
 
 		if (game->adult->entity.position.x > 1.05f ||
 		    game->adult->entity.position.x < -1.05f ||
@@ -1054,10 +1064,10 @@ static void game_move_adult(game_t *game, v2f_t *dir)
 			sfx_play(&sfx.baby_rescued);
 
 			/* make the rescued baby available for respawn reuse */
-			game->adult->holding->any.flashes_remaining = 0;
-			stage_set_active(game->adult->holding->any.node, 0);
-			game->adult->holding->baby.rescues_next = game->rescues_head;
-			game->rescues_head = &game->adult->holding->baby;
+			game->adult->holding->entity.flashes_remaining = 0;
+			stage_set_active(game->adult->holding->entity.node, 0);
+			game->adult->holding->rescues_next = game->rescues_head;
+			game->rescues_head = game->adult->holding;
 			game->babies_cnt--;
 
 			game->adult->holding = NULL;
