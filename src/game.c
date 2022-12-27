@@ -400,6 +400,24 @@ static void reset_virus(virus_t *virus)
 }
 
 
+/* returns 1 if entity started flashing, 0 if already flashing */
+static int flash_entity(game_t *game, entity_any_t *any, unsigned count)
+{
+	any->flashes_remaining = count;
+
+	if (!any->flashing) {
+		any->flashing = 1;
+		any->flashers_next = game->flashers_on_head;
+		game->flashers_on_head = any;
+
+		return 1;
+	}
+
+	return 0;
+}
+
+
+/* TODO FIXME: this should really be infect_baby() */
 static void infect_entity(game_t *game, entity_t *entity, const char *name)
 {
 	/* convert entity into inanimate virus (off the viruses array) */
@@ -457,6 +475,36 @@ static void mask_adult(game_t *game, adult_t *adult, mask_t *mask)
 }
 
 
+/* returns 1 if infected/killed, 0 if survived */
+static int expose_adult(game_t *game, adult_t *adult, virus_t *virus)
+{
+	if (adult->masked) {
+		if (!--adult->masked) {
+			(void) adult_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
+			sfx_play(&sfx.adult_unmasked);
+		} else
+			sfx_play(&sfx.adult_maskhit);
+		(void) flash_entity(game, &adult->entity, 4);
+		reset_virus(virus);
+
+		return 0;
+	}
+
+	/* convert adult into inanimate virus (off the viruses array) */
+	(void) virus_node_new(&(stage_conf_t){ .stage = adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->entity.model_x);
+	sfx_play(&sfx.adult_infected);
+
+	if (adult->holding) {
+		(void) virus_node_new(&(stage_conf_t){ .stage = adult->holding->entity.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &adult->holding->entity.model_x);
+		sfx_play(&sfx.baby_infected);
+	}
+
+	game->state = GAME_STATE_OVER;
+
+	return 1;
+}
+
+
 static void pickup_baby(game_t *game, adult_t *adult, baby_t *baby)
 {
 	if (adult->holding)
@@ -466,23 +514,6 @@ static void pickup_baby(game_t *game, adult_t *adult, baby_t *baby)
 	adult->holding = baby;
 	adult->holding->entity.position = adult->entity.position;
 	entity_update_x(game, &adult->holding->entity);
-}
-
-
-/* returns 1 if entity started flashing, 0 if already flashing */
-static int flash_entity(game_t *game, entity_any_t *any, unsigned count)
-{
-	any->flashes_remaining = count;
-
-	if (!any->flashing) {
-		any->flashing = 1;
-		any->flashers_next = game->flashers_on_head;
-		game->flashers_on_head = any;
-
-		return 1;
-	}
-
-	return 0;
 }
 
 
@@ -746,24 +777,8 @@ static ix2_search_status_t virus_search(void *cb_context, ix2_object_t *ix2_obje
 		return IX2_SEARCH_MORE_HIT;
 
 	case ENTITY_TYPE_ADULT:
-		/* convert adult into inanimate virus (off the viruses array) */
-		if (entity->adult.masked) {
-			reset_virus(search->virus);
-
-			if (!--entity->adult.masked) {
-				(void) adult_node_new(&(stage_conf_t){ .stage = search->game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &search->game->adult->entity.model_x);
-				sfx_play(&sfx.adult_unmasked);
-			} else
-				sfx_play(&sfx.adult_maskhit);
-
-			(void) flash_entity(search->game, &entity->any, 4);
-
-			return IX2_SEARCH_STOP_MISS;
-		}
-
-		(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &search->game->sars->projection_x, &entity->any.model_x);
-		sfx_play(&sfx.adult_infected);
-		search->game->state = GAME_STATE_OVER;
+		if (!expose_adult(search->game, &entity->adult, search->virus))
+			return IX2_SEARCH_MORE_MISS;
 
 		return IX2_SEARCH_STOP_HIT;
 
@@ -968,27 +983,8 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 		return IX2_SEARCH_MORE_MISS;
 
 	case ENTITY_TYPE_VIRUS:
-		if (game->adult->masked) {
-			if (!--game->adult->masked) {
-				(void) adult_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-unmasked", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
-				sfx_play(&sfx.adult_unmasked);
-			} else
-				sfx_play(&sfx.adult_maskhit);
-			(void) flash_entity(game, &game->adult->entity, 4);
-			reset_virus(&entity->virus);
-
+		if (!expose_adult(game, game->adult, &entity->virus))
 			return IX2_SEARCH_MORE_MISS;
-		}
-
-		/* convert adult into inanimate virus (off the viruses array) */
-		(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->entity.node, .replace = 1, .name = "adult-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->entity.model_x);
-		sfx_play(&sfx.adult_infected);
-
-		if (game->adult->holding) {
-			(void) virus_node_new(&(stage_conf_t){ .stage = game->adult->holding->entity.node, .replace = 1, .name = "baby-virus", .active = 1, .alpha = 1.f }, &game->sars->projection_x, &game->adult->holding->entity.model_x);
-			sfx_play(&sfx.baby_infected);
-		}
-		game->state = GAME_STATE_OVER;
 
 		return IX2_SEARCH_STOP_HIT;
 
