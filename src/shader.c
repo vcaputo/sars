@@ -101,11 +101,13 @@ shader_t * shader_pair_new(const char *vs_src, const char *fs_src, unsigned n_un
 }
 
 
-void shader_ref(shader_t *shader)
+shader_t * shader_ref(shader_t *shader)
 {
 	assert(shader);
 
 	shader->refcnt++;
+
+	return shader;
 }
 
 

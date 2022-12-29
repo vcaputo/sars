@@ -141,8 +141,7 @@ stage_t * shader_node_new_shader(const stage_conf_t *conf, shader_t *shader, con
 	shader_node = calloc(1, sizeof(shader_node_t));
 	fatal_if(!shader_node, "Unable to allocate shader_node");
 
-	shader_ref(shader);
-	shader_node->shader = shader;
+	shader_node->shader = shader_ref(shader);
 	shader_node->uniforms_func = uniforms_func;
 	shader_node->uniforms_ctxt = uniforms_ctxt;
 	shader_node->transform = transform;

@@ -21,7 +21,7 @@ typedef struct shader_t shader_t;
 
 unsigned int shader_pair_new_bare(const char *vs_src, const char *fs_src);
 shader_t * shader_pair_new(const char *vs_src, const char *fs_src, unsigned n_uniforms, const char **uniforms, unsigned n_attributes, const char **attributes);
-void shader_ref(shader_t *shader);
+shader_t * shader_ref(shader_t *shader);
 shader_t * shader_free(shader_t *shader);
 void shader_use(shader_t *shader, unsigned *res_n_uniforms, int **res_uniforms, unsigned *res_n_attributes, int **res_attributes);
 
