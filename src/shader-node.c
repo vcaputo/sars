@@ -26,11 +26,16 @@
 #include "shader-node.h"
 #include "v2f.h"
 
+
 typedef struct shader_node_t {
-	shader_t			*shader;
-	shader_node_uniforms_func_t	*uniforms_func;
-	void				*uniforms_ctxt;
-	const m4f_t			*transform;
+	unsigned			*index_ptr;
+	unsigned			n_shaders;
+	struct {
+		shader_t			*shader;
+		shader_node_uniforms_func_t	*uniforms_func;
+		void				*uniforms_ctxt;
+		const m4f_t			*transform;
+	}				shaders[];
 } shader_node_t;
 
 static unsigned	vbo, tcbo;
@@ -65,14 +70,20 @@ static stage_render_func_ret_t shader_node_render(const stage_t *stage, void *ob
 	shader_node_t	*shader_node = object;
 	unsigned	n_uniforms;
 	int		*uniforms, *attributes;
+	unsigned	idx = 0;
 
 	assert(stage);
 	assert(shader_node);
 
-	shader_use(shader_node->shader, &n_uniforms, &uniforms, NULL, &attributes);
+	if (shader_node->index_ptr)
+		idx = *(shader_node->index_ptr);
 
-	if (shader_node->uniforms_func)
-		shader_node->uniforms_func(shader_node->uniforms_ctxt, render_ctxt, n_uniforms, uniforms, shader_node->transform, alpha);
+	assert(idx < shader_node->n_shaders);
+
+	shader_use(shader_node->shaders[idx].shader, &n_uniforms, &uniforms, NULL, &attributes);
+
+	if (shader_node->shaders[idx].uniforms_func)
+		shader_node->shaders[idx].uniforms_func(shader_node->shaders[idx].uniforms_ctxt, render_ctxt, n_uniforms, uniforms, shader_node->shaders[idx].transform, alpha);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glVertexAttribPointer(attributes[0], 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -106,7 +117,8 @@ static void shader_node_free(const stage_t *stage, void *object)
 	assert(shader_node);
 
 	/* XXX FIXME: hmm, maybe the caller should supply a shader_t ** instead */
-	(void) shader_free(shader_node->shader);
+	for (unsigned i = 0; i < shader_node->n_shaders; i++)
+		(void) shader_free(shader_node->shaders[i].shader);
 	free(shader_node);
 }
 
@@ -117,14 +129,20 @@ static const stage_ops_t shader_node_ops = {
 };
 
 
-/* return a new shader stage node from an already compiled and linked shader program */
-stage_t * shader_node_new_shader(const stage_conf_t *conf, shader_t *shader, const m4f_t *transform, shader_node_uniforms_func_t *uniforms_func, void *uniforms_ctxt)
+/* return a new shader stage node from a vector of already compiled and linked shader programs.
+ * When n_shader_confs is > 1, index_ptr must point somewhere valid for the lifetime of this node,
+ * and serves as the index into the vector for selecting which shader_conf to use @ render time.
+ * When n_shader_confs is 1, index_ptr may be NULL.
+ */
+stage_t * shader_node_new_shaderv(const stage_conf_t *conf, unsigned n_shader_confs, const shader_conf_t *shader_confs, unsigned *index_ptr)
 {
 	shader_node_t	*shader_node;
 	stage_t		*stage;
 
 	assert(conf);
-	assert(shader);
+	assert(shader_confs);
+	assert(n_shader_confs > 0);
+	assert(index_ptr || n_shader_confs == 1);
 
 	if (!vbo) {
 		/* common to all shader nodes */
@@ -138,13 +156,17 @@ stage_t * shader_node_new_shader(const stage_conf_t *conf, shader_t *shader, con
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	shader_node = calloc(1, sizeof(shader_node_t));
+	shader_node = calloc(1, sizeof(shader_node_t) + n_shader_confs * sizeof(shader_node->shaders[0]));
 	fatal_if(!shader_node, "Unable to allocate shader_node");
 
-	shader_node->shader = shader_ref(shader);
-	shader_node->uniforms_func = uniforms_func;
-	shader_node->uniforms_ctxt = uniforms_ctxt;
-	shader_node->transform = transform;
+	shader_node->index_ptr = index_ptr;
+	shader_node->n_shaders = n_shader_confs;
+	for (unsigned i = 0; i < n_shader_confs; i++) {
+		shader_node->shaders[i].shader = shader_ref(shader_confs[i].shader);
+		shader_node->shaders[i].uniforms_func = shader_confs[i].uniforms_func;
+		shader_node->shaders[i].uniforms_ctxt = shader_confs[i].uniforms_ctxt;
+		shader_node->shaders[i].transform = shader_confs[i].transform;
+	}
 
 	stage = stage_new(conf, &shader_node_ops, shader_node);
 	fatal_if(!stage, "Unable to create stage \"%s\"", conf->name);
@@ -153,23 +175,49 @@ stage_t * shader_node_new_shader(const stage_conf_t *conf, shader_t *shader, con
 }
 
 
-/* return a new shader stage node from source */
-stage_t * shader_node_new_src(const stage_conf_t *conf, const char *vs_src, const char *fs_src, const m4f_t *transform, shader_node_uniforms_func_t *uniforms_func, void *uniforms_ctxt, unsigned n_uniforms, const char **uniforms)
+/* return a new shader stage node from an already compiled and linked shader program */
+stage_t * shader_node_new_shader(const stage_conf_t *conf, const shader_conf_t *shader_conf)
 {
+	return shader_node_new_shaderv(conf, 1, shader_conf, NULL);
+}
+
+
+/* return a new shader stage node from source vector, see shader_node_new_shaderv() comment */
+stage_t * shader_node_new_srcv(const stage_conf_t *conf, unsigned n_shader_src_confs, const shader_src_conf_t *shader_src_confs, unsigned *index_ptr)
+{
+	shader_conf_t	shader_confs[n_shader_src_confs];
 	stage_t		*stage;
-	shader_t	*shader;
 
-	assert(vs_src);
-	assert(fs_src);
+	assert(n_shader_src_confs > 0);
+	assert(shader_src_confs);
 
-	shader = shader_pair_new(vs_src, fs_src, n_uniforms, uniforms,
-			2,
-			(const char *[]) {
-			"vertex",
-			"texcoord",
-			});
-	stage = shader_node_new_shader(conf, shader, transform, uniforms_func, uniforms_ctxt);
-	shader_free(shader);
+	for (unsigned i = 0; i < n_shader_src_confs; i++) {
+		shader_confs[i].shader = shader_pair_new(
+						shader_src_confs[i].vs_src,
+						shader_src_confs[i].fs_src,
+						shader_src_confs[i].n_uniforms,
+						shader_src_confs[i].uniforms,
+						2,
+						(const char *[]) {
+							"vertex",
+							"texcoord",
+						}
+					);
+		shader_confs[i].transform = shader_src_confs[i].transform;
+		shader_confs[i].uniforms_func = shader_src_confs[i].uniforms_func;
+		shader_confs[i].uniforms_ctxt = shader_src_confs[i].uniforms_ctxt;
+	}
+
+	stage = shader_node_new_shaderv(conf, n_shader_src_confs, shader_confs, index_ptr);
+	for (unsigned i = 0; i < n_shader_src_confs; i++)
+		shader_free(shader_confs[i].shader);
 
 	return stage;
+}
+
+
+/* return a new shader stage node from source */
+stage_t * shader_node_new_src(const stage_conf_t *conf, const shader_src_conf_t *shader_src_conf)
+{
+	return shader_node_new_srcv(conf, 1, shader_src_conf, NULL);
 }

@@ -227,7 +227,7 @@ typedef struct game_t {
 	mask_t		*mask;
 	teepee_t	*teepee;
 	entity_t	*new_infections;
-	int		is_maga;
+	unsigned	is_maga;
 	float		infections_rate, infections_rate_smoothed; /* 0-1 for none-max */
 	virus_t		*viruses[GAME_NUM_VIRUSES];
 	m4f_t		score_digits_x[10];
