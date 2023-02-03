@@ -23,11 +23,12 @@ $ ./src/sars
 ```
 
 The program assumes there will be assets found under the assets/
-folder relative to the current working directory.
+folder relative to the sars executable's parent directory.
 
 These are some .ogg files and .wav files, and they're not checked
-into the git repo.  You may find the assets in a build available
-at:
+into the git repo to keep development low-bw friendly.
+
+You may find the assets in a build available at:
 
 https://dl.pengaru.com/hungrycat/sars/
 
