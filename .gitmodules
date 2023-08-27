@@ -1,12 +1,12 @@
 [submodule "libstage"]
 	path = libstage
-	url = git://git.pengaru.com/libstage
+	url = https://git.pengaru.com/git/libstage
 [submodule "libplay"]
 	path = libplay
-	url = git://git.pengaru.com/libplay
+	url = https://git.pengaru.com/git/libplay
 [submodule "libix2"]
 	path = libix2
-	url = git://git.pengaru.com/libix2
+	url = https://git.pengaru.com/git/libix2
 [submodule "libansr"]
 	path = libansr
-	url = git://git.pengaru.com/libansr
+	url = https://git.pengaru.com/git/libansr
