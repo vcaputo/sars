@@ -36,6 +36,7 @@
 #define HUNGRYCAT_FADE_TIMER	PLAY_TICKS_TIMER0
 
 typedef enum hungrycat_state_t {
+	HUNGRYCAT_STATE_WAIT,
 	HUNGRYCAT_STATE_DELAY,
 	HUNGRYCAT_STATE_FADEIN,
 	HUNGRYCAT_STATE_SHOW,
@@ -71,8 +72,12 @@ static void * hungrycat_init(play_t *play, int argc, char *argv[], unsigned flag
 static void hungrycat_enter(play_t *play, void *context)
 {
 	hungrycat_t	*hungrycat = context;
+	sars_t		*sars = play_context(play, SARS_CONTEXT_SARS);
 
 	assert(hungrycat);
+
+	if (!sars->wait)
+		hungrycat->state = HUNGRYCAT_STATE_DELAY;
 
 	play_ticks_reset(play, HUNGRYCAT_FADE_TIMER);
 }
@@ -92,6 +97,11 @@ static void hungrycat_update(play_t *play, void *context)
 	assert(hungrycat);
 
 	switch (hungrycat->state) {
+	case HUNGRYCAT_STATE_WAIT:
+		/* just wait indefinitely until an ESC is pressed (see hungrycat_dispatch()) */
+		stage_dirty(hungrycat->node);
+		break;
+
 	case HUNGRYCAT_STATE_DELAY:
 		stage_dirty(hungrycat->node);
 		if (!play_ticks_elapsed(play, HUNGRYCAT_FADE_TIMER, sars->delay_seconds * 1000))
@@ -168,11 +178,16 @@ static void hungrycat_dispatch(play_t *play, void *context, SDL_Event *event)
 
 	switch (event->type) {
 	case SDL_KEYDOWN:
-		if (event->key.keysym.sym == SDLK_ESCAPE)
-			exit(0);
+		if (event->key.keysym.sym == SDLK_ESCAPE) {
+			if (hungrycat->state != HUNGRYCAT_STATE_WAIT)
+				exit(0);
+
+			hungrycat->state = HUNGRYCAT_STATE_DELAY;
+		}
 		/* fallthrough */
 	case SDL_FINGERDOWN:
-		if (hungrycat->state != HUNGRYCAT_STATE_DELAY)
+		if (hungrycat->state != HUNGRYCAT_STATE_WAIT &&
+		    hungrycat->state != HUNGRYCAT_STATE_DELAY)
 			play_context_enter(play, SARS_CONTEXT_GAME);
 		break;
 
