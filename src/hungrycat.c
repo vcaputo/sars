@@ -159,6 +159,10 @@ static void hungrycat_leave(play_t *play, void *context)
 
 static void hungrycat_dispatch(play_t *play, void *context, SDL_Event *event)
 {
+	hungrycat_t	*hungrycat = context;
+
+	assert(hungrycat);
+
 	/* global handlers */
 	sars_dispatch(play, context, event);
 
@@ -168,7 +172,8 @@ static void hungrycat_dispatch(play_t *play, void *context, SDL_Event *event)
 			exit(0);
 		/* fallthrough */
 	case SDL_FINGERDOWN:
-		play_context_enter(play, SARS_CONTEXT_GAME);
+		if (hungrycat->state != HUNGRYCAT_STATE_DELAY)
+			play_context_enter(play, SARS_CONTEXT_GAME);
 		break;
 
 	default:
