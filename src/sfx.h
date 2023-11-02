@@ -48,6 +48,6 @@ typedef struct sfx_t {
 extern sfx_t	sfx;
 
 void sfx_init(void);
-void sfx_play(sfx_sound_t *sound);
+void sfx_play(sfx_sound_t *sound, float volume);
 
 #endif

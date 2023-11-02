@@ -63,9 +63,15 @@ void sfx_init(void)
 }
 
 
-void sfx_play(sfx_sound_t *sound)
+/* play sfx, volume 0-1 */
+void sfx_play(sfx_sound_t *sound, float volume)
 {
 	assert(sound);
+
+	if (volume > 1.f)
+		volume = 1.f;
+	else if (volume < 0.f)
+		volume = 0.f;
 
 	if (sound->chunk) {
 		int	channel;
@@ -74,6 +80,7 @@ void sfx_play(sfx_sound_t *sound)
 		if (channel < 0)
 			channel = Mix_GroupOldest(sound->voice);
 
+		Mix_Volume(channel, MIX_MAX_VOLUME * volume);
 		Mix_PlayChannel(channel, sound->chunk, 0);
 	}
 }
