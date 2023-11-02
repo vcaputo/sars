@@ -400,6 +400,19 @@ static void reset_virus(virus_t *virus)
 }
 
 
+/* return a 0-1 volume based on entity's distance from the adult */
+static float entity_volume(game_t *game, entity_any_t *entity)
+{
+	float	volume;
+	v2f_t	delta;
+
+	delta = v2f_sub(&game->adult->entity.position, &entity->position);
+	volume = 1.f - ((1.f / 2.8284f) * v2f_length(&delta));
+
+	return (volume * volume);
+}
+
+
 /* returns 1 if entity started flashing, 0 if already flashing */
 static int flash_entity(game_t *game, entity_any_t *any, unsigned count)
 {
@@ -817,6 +830,13 @@ static void update_entities(play_t *play, game_t *game)
 		game->tv->entity.position.y = randf();
 		entity_update_x(game, &game->tv->entity);
 		stage_set_active(game->tv->entity.node, 1);
+
+		/* shifted because rand() tends to have more activity in the upper bits,
+		 * but this could be more careful about avoiding repetition by randomizing
+		 * a 0-9 list every time it stepped through said list. TODO
+		 */
+		sfx_play(&sfx.tv_talk[(rand() >> 8) % NELEMS(sfx.tv_talk)],
+			 entity_volume(game, &game->tv->entity));
 	}
 
 	if (game->adult->captivated && randf() > (1.f - GAME_MAGA_CHANCE) && !stage_get_active(game->maga->entity.node)) {
@@ -991,11 +1011,6 @@ static ix2_search_status_t adult_search(void *cb_context, ix2_object_t *ix2_obje
 	case ENTITY_TYPE_TV:
 		game->adult->captivated = 1;
 		sfx_play(&sfx.adult_captivated, 1.f);
-		/* shifted because rand() tends to have more activity in the upper bits,
-		 * but this could be more careful about avoiding repetition by randomizing
-		 * a 0-9 list every time it stepped through said list. TODO
-		 */
-		sfx_play(&sfx.tv_talk[(rand() >> 8) % NELEMS(sfx.tv_talk)], 1.f);
 
 		return IX2_SEARCH_STOP_HIT;
 
