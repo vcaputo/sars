@@ -435,7 +435,7 @@ static void infect_entity(game_t *game, entity_t *entity, const char *name)
 {
 	/* convert entity into inanimate virus (off the viruses array) */
 	(void) virus_node_new(&(stage_conf_t){ .stage = entity->any.node, .replace = 1, .name = name, .active = 1, .alpha = 1.f }, &game->sars->projection_x, &entity->any.model_x);
-	sfx_play(&sfx.baby_infected, 1.f);
+	sfx_play(&sfx.baby_infected, entity_volume(game, &entity->any));
 	entity->any.type = ENTITY_TYPE_VIRUS;
 	entity->virus.corpse = 1;
 
