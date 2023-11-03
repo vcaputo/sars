@@ -352,7 +352,7 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 	warn_if(!SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0"),
 		"Unable to suppress synthetic mouse events on touch");
 
-	sars->window = SDL_CreateWindow("sars",
+	sars->window = SDL_CreateWindow("SARS",
 				SDL_WINDOWPOS_CENTERED,
 				SDL_WINDOWPOS_CENTERED,
 				sars->window_width, sars->window_height,
@@ -364,7 +364,7 @@ static void * sars_init(play_t *play, int argc, char *argv[], unsigned flags)
 		fatal_if(SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0) < 0,
 			"Unable to clear GL multisample buffers attribute");
 
-		sars->window = SDL_CreateWindow("sars",
+		sars->window = SDL_CreateWindow("SARS",
 					SDL_WINDOWPOS_CENTERED,
 					SDL_WINDOWPOS_CENTERED,
 					sars->window_width, sars->window_height,
