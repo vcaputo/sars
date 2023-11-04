@@ -204,6 +204,7 @@ typedef struct game_t {
 		int		active;
 	} touch;
 
+	play_t		*play;
 	sars_t		*sars;
 	stage_t		*stage;
 	stage_t		*game_node;
@@ -468,6 +469,7 @@ static void maga_adult(game_t *game, adult_t *adult, maga_t *maga)
 	 */
 	game->is_maga = 1;
 	sfx_play(&sfx.adult_maga, 1.f);
+	play_music_set(game->play, PLAY_MUSIC_FLAG_LOOP|PLAY_MUSIC_FLAG_IDEMPOTENT, "assets/maga.ogg");
 	stage_set_active(maga->entity.node, 0);
 }
 
@@ -1157,6 +1159,7 @@ static void * game_init(play_t *play, int argc, char *argv[], unsigned flags)
 	game = calloc(1, sizeof(game_t));
 	fatal_if(!game, "Unable to allocate game_t");
 
+	game->play = play;
 	game->sars = sars;
 	game->stage = sars->stage;
 	game->plasma_node = plasma_node_new(&(stage_conf_t){ .parent = sars->stage, .name = "plasma", .alpha = 1 }, &sars->projection_x, &game->infections_rate_smoothed, &game->is_maga);
